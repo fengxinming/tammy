@@ -6,6 +6,7 @@ const { resolve, sourceDir, DIST_FILENAME } = require('./_util');
 function configure(input, output) {
   const isDIR = input.indexOf('*') > -1;
   return {
+    isProd: true,
     inputOptions: {
       input: isDIR ? matches(resolve(input)) : resolve(input)
     },
@@ -21,5 +22,5 @@ function configure(input, output) {
 
 module.exports = [
   configure('src/index.js', `dist/${DIST_FILENAME}.common.js`),
-  ...sourceDir.map(dir => configure(`src/${dir}.js`, `dist/${dir}.common.js`))
+  ...sourceDir.map(dir => configure(`src/${dir}/index.js`, `dist/${dir}.common.js`))
 ];

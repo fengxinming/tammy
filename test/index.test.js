@@ -1,35 +1,9 @@
 import tammy from '../src/index';
+import { makeXHR } from './util';
 
 describe('测试 tammy', () => {
 
-  function makeXHR(opts) {
-    const xhrMockClass = () => {
-      const response = {
-        code: 0,
-        message: 'success'
-      };
-      const xhr = Object.assign({
-        open: jest.fn(),
-        send: jest.fn(),
-        abort: jest.fn(),
-        setRequestHeader: jest.fn(),
-        addEventListener: jest.fn(),
-        upload: {
-          addEventListener: jest.fn()
-        },
-        readyState: 4,
-        status: 200,
-        responseText: JSON.stringify(response),
-        response
-      }, opts);
-      setTimeout(() => {
-        xhr.onreadystatechange();
-      }, 200);
-      return xhr;
-    };
-
-    return jest.fn().mockImplementation(xhrMockClass);
-  }
+  const originalXMLHttpRequest = window.XMLHttpRequest;
 
   beforeAll(() => {
     window.XMLHttpRequest = makeXHR();
@@ -65,6 +39,20 @@ describe('测试 tammy', () => {
           })
         );
       });
+
+    await tammy(url, {
+      params: {
+        aa: 'aa',
+        bb: 'bb'
+      }
+    }).then(({ data }) => {
+      expect(data).toEqual(
+        expect.objectContaining({
+          code: expect.any(Number),
+          message: expect.any(String)
+        })
+      );
+    });
   });
 
   it('测试 post 请求', async () => {
@@ -175,23 +163,25 @@ describe('测试 tammy', () => {
   });
 
   it('测试拦截器', async () => {
-    newTammy.beforeRequest((options) => {
-      options.headers = { 'X-SB': 'SB' };
+    newTammy.hookRequest((options) => {
+      options.headers = { 'X-SB-X': 'SB' };
       return options;
     });
-    newTammy.afterResponse((res) => {
+    newTammy.hookResponse((res) => {
       const { options } = res;
-      expect(options.headers['X-SB']).toBe('SB');
+      expect(options.headers['X-SB-X']).toBe('SB');
       return res;
     });
     await newTammy(url);
   });
 
   it('测试设置请求头', async () => {
-    newTammy.setDefaultHeader('X-SB', 'SB');
-    newTammy.setDefaultHeader('Content-Type', '');
-    newTammy.setDefaultHeader('Content-Type', 'json', 'post');
-    newTammy.setDefaultHeader('Content-Type', 'form', 'aaa');
+    tammy.use(({ setHeader }) => {
+      setHeader('X-SB', 'SB');
+      setHeader('Content-Type', '');
+      setHeader('Content-Type', 'json', 'post');
+      setHeader('Content-Type', 'form', 'aaa');
+    });
   });
 
   it('测试终止请求', async () => {
@@ -213,5 +203,93 @@ describe('测试 tammy', () => {
     } catch (error) {
       expect(error.message).toBe('主动中断');
     }
+  });
+
+  it('测试处理headers', async () => {
+    await tammy({
+      url,
+      headers: {
+        'Content-Type': ''
+      },
+      method: 'POST',
+      getAllResponseHeaders: true
+    }).then(({ headers }) => {
+      expect(headers).toEqual(
+        expect.objectContaining({
+          'content-type': 'application/json;charset=utf-8'
+        })
+      );
+    });
+  });
+
+  it('测试处理超时', async () => {
+    window.XMLHttpRequest = makeXHR({ timeout: 100 });
+    try {
+      await tammy({
+        url,
+        headers: {
+          'Content-Type': ''
+        },
+        method: 'POST',
+        timeout: 100,
+        getAllResponseHeaders: true
+      });
+    } catch (e) {
+      expect(e.code).toBe('ECONNABORTED');
+    }
+    window.XMLHttpRequest = makeXHR();
+  });
+
+  it('测试处理网络异常', async () => {
+    window.XMLHttpRequest = makeXHR({ error: true });
+    try {
+      await tammy({
+        url,
+        headers: {
+          'Content-Type': ''
+        },
+        method: 'POST',
+        timeout: 100,
+        getAllResponseHeaders: true
+      });
+    } catch (e) {
+      expect(e.message).toBe('Network Error');
+    }
+    window.XMLHttpRequest = makeXHR();
+  });
+
+  it('测试中断请求', async () => {
+    window.XMLHttpRequest = makeXHR({ abort: true });
+    try {
+      await tammy({
+        url,
+        headers: {
+          'Content-Type': ''
+        },
+        method: 'POST',
+        timeout: 100,
+        getAllResponseHeaders: true
+      });
+    } catch (e) {
+      expect(e.code).toBe('ECONNABORTED');
+    }
+    window.XMLHttpRequest = makeXHR();
+  });
+
+  it('测试验证状态失败', async () => {
+    try {
+      await tammy({
+        url,
+        validateStatus(status) {
+          return !status;
+        }
+      });
+    } catch (e) {
+      expect(e.message).toBe('Request failed with status code 200');
+    }
+  });
+
+  afterAll(() => {
+    window.XMLHttpRequest = originalXMLHttpRequest();
   });
 });

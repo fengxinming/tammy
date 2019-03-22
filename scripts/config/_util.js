@@ -14,20 +14,20 @@ const {
   version
 } = require('../../package.json');
 
+const DIST_FILENAME = exports.DIST_FILENAME = 'tammy';
+
 const banner = exports.banner =
   '/*!\n' +
-  ' * celia.js v' + version + '\n' +
+  ' * ' + DIST_FILENAME + '.js v' + version + '\n' +
   ' * (c) 2018-' + new Date().getFullYear() + ' Jesse Feng\n' +
   ' * Released under the MIT License.\n' +
   ' */';
 
 const resolve = exports.resolve = p => path.resolve(__dirname, '..', '..', p);
 
-const DIST_FILENAME = exports.DIST_FILENAME = 'celia';
-
 exports.sourceDir = fs
   .readdirSync(resolve('src'))
-  .filter(file => file.indexOf('_') && file.lastIndexOf('.js') === -1);
+  .filter(file => file !== 'lib' && file.lastIndexOf('.js') === -1);
 
 exports.genConfig = function (name, opts) {
   const {

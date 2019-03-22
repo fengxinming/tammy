@@ -3,8 +3,8 @@ import isString from 'celia/es/isString';
 import { isStandardBrowserEnv } from './util';
 
 const cookies = {
-  set: function write() { },
-  get: function read() { return null; },
+  set: function set() { },
+  get: function get() { return null; },
   remove: function remove() { }
 };
 

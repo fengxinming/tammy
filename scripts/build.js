@@ -7,16 +7,16 @@ const { promisify } = require('util');
 const rollup = require('rollup');
 const zlib = require('zlib');
 const rimraf = require('rimraf');
-const { getConsole } = require('corie-logger');
+const Console = require('corie-console');
 const { minify } = require('uglify-js');
 const cp = require('./cp');
 
 let builds = require('./config').getAllBuilds();
-const { resolve, sourceDir, banner } = require('./config/_util');
+const { resolve, sourceDir, banner, DIST_FILENAME } = require('./config/_util');
 
 const gzip = promisify(zlib.gzip);
 const writeFileify = promisify(writeFile);
-const logger = getConsole('celia');
+const logger = new Console('celia');
 
 if (process.argv[2]) {
   const filters = process.argv[2].split(',');
@@ -31,11 +31,6 @@ if (process.argv[2]) {
  */
 async function build(builds) {
   rimraf.sync(resolve('dist/**'));
-  sourceDir.concat('index').forEach((mod) => {
-    mod = resolve(`src/${mod}.js`);
-    rimraf.sync(mod);
-    logger.info(`remove file: ${mod}`);
-  });
   const srcDir = resolve('src');
   // 把单独的文件夹打包成js
   if (!existsSync(join(srcDir, 'index.js'))) {
@@ -51,22 +46,10 @@ async function build(builds) {
       break;
     }
   }
-  const dirList = readdirSync(srcDir);
-  dirList
-    .forEach((file) => {
-      if (file !== 'index.js' && file.lastIndexOf('.js') > -1) {
-        file = file.slice(0, -3);
-        if (dirList.indexOf(file) === -1) {
-          console.log('-', file);
-        }
-      }
-    });
+  console.log('-', DIST_FILENAME);
   sourceDir
     .forEach((dir) => {
-      readdirSync(join(srcDir, dir))
-        .forEach((file) => {
-          console.log('-', `${dir}/${file.slice(0, -3)}`);
-        });
+      console.log('-', dir);
     });
 }
 

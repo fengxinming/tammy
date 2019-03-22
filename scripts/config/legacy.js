@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolve, sourceDir, DIST_FILENAME } = require('./_util');
+const { resolve, DIST_FILENAME } = require('./_util');
 
 function configure(input, output) {
   return {
@@ -19,6 +19,5 @@ function configure(input, output) {
 }
 
 module.exports = [
-  configure('src/index.js', `dist/${DIST_FILENAME}.legacy.js`),
-  ...sourceDir.map(dir => configure(`src/${dir}.js`, `dist/${dir}.legacy.js`))
+  configure('src/index.js', `dist/${DIST_FILENAME}.legacy.js`)
 ];
