@@ -337,6 +337,52 @@
   var ETIMEOUT = 'ETIMEOUT';
   var ENETWORK = 'ENETWORK';
 
+  var managers = {};
+
+  function uuid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function buildError(anything) {
+    var options;
+    if (!anything) {
+      anything = 'Request aborted';
+    } else if (isObject(anything)) {
+      options = anything;
+      anything = anything.message;
+    }
+    return createError(anything || '', options);
+  }
+
+  function abort(token, anything, ctx) {
+    var fn = managers[token];
+    if (isFunction(fn)) {
+      fn(buildError(anything));
+      delete managers[token];
+    }
+    return ctx;
+  }
+
+  function abortAll(anything, ctx) {
+    forIn$1(managers, function (fn, token) {
+      fn(buildError(anything));
+      delete managers[token];
+    });
+    return ctx;
+  }
+
+  function push(fn) {
+    var token = uuid();
+    managers[token] = fn;
+    return token;
+  }
+
+  function clearAbortions(options) {
+    delete managers[options.abortedToken];
+    delete options.abortedToken;
+    delete options.abortedError;
+  }
+
   function xhr (options) {
     return new Promise(function (resolve, reject) {
       var method = options.method;
@@ -363,6 +409,8 @@
         if (!request || request.readyState !== 4) {
           return;
         }
+
+        clearAbortions(options);
 
         var status = request.status;
         var responseURL = request.responseURL;
@@ -400,27 +448,29 @@
         if (!request) {
           return;
         }
-
-        reject(createError('Request aborted', assign({
+        reject(assign(options.abortedError, {
           code: ECONNABORTED,
           options: options,
           request: request
-        }, request.abortedError)));
+        }));
 
         // 垃圾回收
+        clearAbortions(options);
         request = null;
       };
 
       // 主动中断请求
-      if (abortion) {
-        abortion.add(function (error) {
-          request.abortedError = error;
-          request.abort();
-        });
+      var token = options.abortedToken = push(function (error) {
+        options.abortedError = error;
+        request && request.abort();
+      });
+      if (isFunction(abortion)) {
+        abortion(token);
       }
 
       // 监听网络错误
       request.onerror = function onerror() {
+        clearAbortions(options);
         reject(createError('Network Error', {
           code: ENETWORK,
           options: options,
@@ -433,6 +483,7 @@
 
       // 监听超时处理
       request.ontimeout = function ontimeout() {
+        clearAbortions(options);
         reject(createError(("timeout of " + timeout + "ms exceeded"), {
           code: ETIMEOUT,
           options: options,
@@ -593,47 +644,6 @@
    */
   Tammy.prototype.setHeader = setHeader;
 
-  var Abortion = function Abortion() {
-    this.queue = [];
-  };
-
-  Abortion.prototype.abort = function abort (anything) {
-    var options;
-    if (!anything) {
-      anything = 'Request aborted';
-    } else if (isObject(anything)) {
-      options = anything;
-      anything = anything.message || '';
-    }
-    var ref = this;
-      var queue = ref.queue;
-    var fn;
-    while ((fn = queue.shift())) {
-      fn(createError(anything, options));
-    }
-  };
-
-  Abortion.prototype.add = function add (fn) {
-    append$1(this.queue, fn);
-    return this;
-  };
-
-  Abortion.prototype.clear = function clear () {
-    this.queue.length = 0;
-    return this;
-  };
-
-  Abortion.prototype.pipe = function pipe (abortion) {
-    var queue;
-    if (abortion && (queue = abortion.queue)) {
-      var fn;
-      while ((fn = queue.shift())) {
-        append$1(queue, fn);
-      }
-    }
-    return this;
-  };
-
   function createInstance(options) {
     var tammy = new Tammy(options);
 
@@ -654,11 +664,6 @@
     };
 
     assign($http, {
-      /**
-       * 中断请求
-       */
-      Abortion: Abortion,
-
       /**
        * 挂载全局钩子
        * @param {Function} fn
@@ -703,6 +708,23 @@
        */
       isAborted: function isAborted(e) {
         return e && e.code === ECONNABORTED;
+      },
+
+      /**
+       * 中断请求
+       * @param {String} token
+       * @param {String} anything
+       */
+      abort: function abort$1(token, anything) {
+        return abort(token, anything, $http);
+      },
+
+      /**
+       * 中断所有的请求
+       * @param {String} anything
+       */
+      abortAll: function abortAll$1(anything) {
+        return abortAll(anything, $http);
       }
     });
 

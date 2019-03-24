@@ -325,10 +325,15 @@ These are the available options for making requests. Only the `url` is required.
 
   // `Abortion` specifies a abortion token that can be used to abort the request
   // (see Abortion section below for details)
-  abortion: new Abortion(),
+  abortion: function(token) {
+    t = token;
+  },
 
   // `getAllResponseHeaders` defines the response header that can be parsed
-  getAllResponseHeaders: true
+  getAllResponseHeaders: true,
+
+  // avoid to get cache data
+  cache: false
 }
 ```
 

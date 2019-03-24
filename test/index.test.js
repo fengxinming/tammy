@@ -1,5 +1,6 @@
 import tammy from '../src/index';
 import { makeXHR } from './util';
+import { sleep } from 'celia';
 
 describe('测试 tammy', () => {
 
@@ -194,14 +195,16 @@ describe('测试 tammy', () => {
   });
 
   it('测试终止请求', async () => {
-    const abortion = new tammy.Abortion();
+    let token;
     setTimeout(() => {
-      abortion.abort('主动中断');
+      tammy.abort(token, '测试终止请求');
     }, 100);
     try {
       await tammy({
         url,
-        abortion,
+        abortion(t) {
+          token = t;
+        },
         method: 'POST',
         contentType: 'json',
         data: {
@@ -209,9 +212,66 @@ describe('测试 tammy', () => {
           bb: 'bb'
         }
       });
-    } catch (error) {
-      expect(error.message).toBe('主动中断');
+    } catch (e) {
+      expect(tammy.isAborted(e)).toBe(true);
     }
+
+    await sleep(100);
+
+    setTimeout(() => {
+      tammy.abort(token);
+    }, 100);
+    try {
+      await tammy({
+        url,
+        abortion(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      });
+    } catch (e) {
+      expect(e.message).toBe('Request aborted');
+    }
+
+    sleep(100);
+
+    setTimeout(() => {
+      tammy.abortAll({ message: '测试终止请求2' });
+    }, 100);
+
+    await expect(tammy.map({
+      url,
+      abortion(t) {
+        token = t;
+      },
+      method: 'POST',
+      contentType: 'json',
+      data: {
+        aa: 'aa',
+        bb: 'bb'
+      }
+    }, {
+        url,
+        abortion(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      })).rejects.toEqual(
+        expect.objectContaining({
+          message: '测试终止请求2'
+        })
+      );
+
   });
 
   it('测试处理超时', async () => {

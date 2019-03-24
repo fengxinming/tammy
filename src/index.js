@@ -2,7 +2,7 @@ import isObject from 'celia/es/isObject';
 import Tammy from './lib/Tammy';
 import { ECONNABORTED } from './lib/constants';
 import { merge, assign } from './lib/util';
-import Abortion from './lib/Abortion';
+import { abort, abortAll } from './lib/abortion';
 
 function createInstance(options) {
   const tammy = new Tammy(options);
@@ -24,11 +24,6 @@ function createInstance(options) {
   };
 
   assign($http, {
-    /**
-     * 中断请求
-     */
-    Abortion,
-
     /**
      * 挂载全局钩子
      * @param {Function} fn
@@ -70,6 +65,23 @@ function createInstance(options) {
      */
     isAborted(e) {
       return e && e.code === ECONNABORTED;
+    },
+
+    /**
+     * 中断请求
+     * @param {String} token
+     * @param {String} anything
+     */
+    abort(token, anything) {
+      return abort(token, anything, $http);
+    },
+
+    /**
+     * 中断所有的请求
+     * @param {String} anything
+     */
+    abortAll(anything) {
+      return abortAll(anything, $http);
     }
   });
 

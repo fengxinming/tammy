@@ -8,8 +8,12 @@ export function makeXHR(opts) {
     };
     const xhr = Object.assign({
       open: jest.fn(),
-      send: jest.fn(),
-      abort: jest.fn(),
+      send() {
+        setTimeout(xhr.onreadystatechange, 300);
+      },
+      abort() {
+        xhr.onabort();
+      },
       setRequestHeader: jest.fn(),
       addEventListener: jest.fn(),
       upload: {
@@ -45,16 +49,8 @@ Strict-Transport-Security: max-age=31536000`;
     if (opts && opts.error) {
       setTimeout(() => {
         xhr.onerror();
-      }, 100);
+      }, 200);
     }
-    if (opts && opts.abort) {
-      setTimeout(() => {
-        xhr.onabort();
-      }, 100);
-    }
-    setTimeout(() => {
-      xhr.onreadystatechange();
-    }, 200);
     return xhr;
   };
 

@@ -3,6 +3,13 @@ import isNil from 'celia/es/isNil';
 import isFunction from 'celia/es/isFunction';
 import { createError, logErr, assign } from './util';
 import { CONTENT_TYPE, ECONNABORTED, ETIMEOUT, ENETWORK } from './constants';
+import { push, managers } from './abortion';
+
+function clearAbortions(options) {
+  delete managers[options.abortedToken];
+  delete options.abortedToken;
+  delete options.abortedError;
+}
 
 export default function (options) {
   return new Promise((resolve, reject) => {
@@ -32,6 +39,8 @@ export default function (options) {
       if (!request || request.readyState !== 4) {
         return;
       }
+
+      clearAbortions(options);
 
       const { status, responseURL, responseText } = request;
 
@@ -67,27 +76,29 @@ export default function (options) {
       if (!request) {
         return;
       }
-
-      reject(createError('Request aborted', assign({
+      reject(assign(options.abortedError, {
         code: ECONNABORTED,
         options,
         request
-      }, request.abortedError)));
+      }));
 
       // 垃圾回收
+      clearAbortions(options);
       request = null;
     };
 
     // 主动中断请求
-    if (abortion) {
-      abortion.add((error) => {
-        request.abortedError = error;
-        request.abort();
-      });
+    const token = options.abortedToken = push((error) => {
+      options.abortedError = error;
+      request && request.abort();
+    });
+    if (isFunction(abortion)) {
+      abortion(token);
     }
 
     // 监听网络错误
     request.onerror = function onerror() {
+      clearAbortions(options);
       reject(createError('Network Error', {
         code: ENETWORK,
         options,
@@ -100,6 +111,7 @@ export default function (options) {
 
     // 监听超时处理
     request.ontimeout = function ontimeout() {
+      clearAbortions(options);
       reject(createError(`timeout of ${timeout}ms exceeded`, {
         code: ETIMEOUT,
         options,

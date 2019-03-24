@@ -1,47 +1,44 @@
 import isObject from 'celia/es/isObject';
-import append from 'celia/es/array/append';
+import isFunction from 'celia/es/isFunction';
 import { createError } from './util';
+import forIn from 'celia/es/forIn';
 
-export default class Abortion {
+export const managers = {};
 
-  constructor() {
-    this.queue = [];
+function uuid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function buildError(anything) {
+  let options;
+  if (!anything) {
+    anything = 'Request aborted';
+  } else if (isObject(anything)) {
+    options = anything;
+    anything = anything.message;
   }
+  return createError(anything || '', options);
+}
 
-  abort(anything) {
-    let options;
-    if (!anything) {
-      anything = 'Request aborted';
-    } else if (isObject(anything)) {
-      options = anything;
-      anything = anything.message || '';
-    }
-    const { queue } = this;
-    let fn;
-    while ((fn = queue.shift())) {
-      fn(createError(anything, options));
-    }
+export function abort(token, anything, ctx) {
+  const fn = managers[token];
+  if (isFunction(fn)) {
+    fn(buildError(anything));
+    delete managers[token];
   }
+  return ctx;
+}
 
-  add(fn) {
-    append(this.queue, fn);
-    return this;
-  }
+export function abortAll(anything, ctx) {
+  forIn(managers, (fn, token) => {
+    fn(buildError(anything));
+    delete managers[token];
+  });
+  return ctx;
+}
 
-  clear() {
-    this.queue.length = 0;
-    return this;
-  }
-
-  pipe(abortion) {
-    let queue;
-    if (abortion && (queue = abortion.queue)) {
-      let fn;
-      while ((fn = queue.shift())) {
-        append(queue, fn);
-      }
-    }
-    return this;
-  }
-
+export function push(fn) {
+  const token = uuid();
+  managers[token] = fn;
+  return token;
 }
