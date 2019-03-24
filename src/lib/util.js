@@ -1,10 +1,9 @@
 import isNil from 'celia/es/isNil';
+import isObject from 'celia/es/isObject';
 import forIn from 'celia/es/forIn';
 import forEach from 'celia/es/forEach';
 import append from 'celia/es/array/append';
-import isObject from 'celia/es/isObject';
-
-const rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
+import removeAt from 'celia/es/array/removeAt';
 
 /**
  * 派生对象
@@ -44,15 +43,6 @@ export function merge(result, ...args) {
     forIn(arg, cb);
   });
   return result;
-}
-
-export function parseRawHeaders(rawHeaders) {
-  const responseHeaders = {};
-  let match;
-  while ((match = rheaders.exec(rawHeaders))) {
-    responseHeaders[match[1].toLowerCase()] = match[2];
-  }
-  return responseHeaders;
 }
 
 /**
@@ -104,4 +94,41 @@ export function preloadHooks(promise, hooks) {
   return promise;
 }
 
+/**
+ * 拼接querystring
+ * @param {String} url
+ * @param {String} qs
+ */
+export function joinQS(url, qs) {
+  return url + (url.indexOf('?') > -1 ? '?' : '&') + qs;
+}
+
+const RCACHE = /([?&]_=)[^&]*/;
+let nonce = Date.now();
+/**
+ * 禁用get请求缓存
+ * @param {String} url
+ */
+export function disableCache(url) {
+  nonce++;
+  const newUrl = url.replace(RCACHE, `$1${nonce}`);
+  // url上未使用缓存标识
+  if (newUrl === url) {
+    url = joinQS(url, '_=' + nonce);
+  }
+  return url;
+}
+
 export const logErr = (console && console.error) || function () { };
+
+export function interceptor(arr) {
+  arr.use = function (fulfilled, rejected) {
+    append(arr, { fulfilled, rejected });
+    return arr;
+  };
+  arr.eject = function (index) {
+    removeAt(index);
+    return arr;
+  };
+  return arr;
+}

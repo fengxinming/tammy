@@ -15,7 +15,7 @@ describe('测试 xsrf', () => {
     });
   });
 
-  it('测试主方法', async () => {
+  it('测试xsrf', async () => {
     tammy.use(xsrf);
 
     await tammy({

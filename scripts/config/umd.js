@@ -18,5 +18,6 @@ function configure(input, output) {
 }
 
 module.exports = [
-  configure('src/index.js', `dist/${DIST_FILENAME}.js`)
+  configure('src/index.js', `dist/${DIST_FILENAME}.js`),
+  configure('src/all.js', `dist/${DIST_FILENAME}-all.js`)
 ];

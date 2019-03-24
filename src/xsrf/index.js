@@ -1,8 +1,8 @@
 import cookies from './cookies';
 import { isStandardBrowserEnv, isURLSameOrigin } from './util';
 
-export default function ({ xhrHeaderHooks }) {
-  xhrHeaderHooks[xhrHeaderHooks.length] = ({
+export default function ({ xhrHooks }) {
+  xhrHooks.request.push(({
     url,
     withCredentials,
     xsrfHeaderName,
@@ -20,5 +20,5 @@ export default function ({ xhrHeaderHooks }) {
         headers[xsrfHeaderName] = xsrfValue;
       }
     }
-  };
+  });
 }

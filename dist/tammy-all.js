@@ -719,6 +719,174 @@
 
   var instance = createInstance();
 
+  function oauth (ref) {
+    var xhrHooks = ref.xhrHooks;
+
+    xhrHooks.request.push(function (ref) {
+      var auth = ref.auth;
+      var headers = ref.headers;
+
+      // HTTP basic authentication
+      if (auth) {
+        var username = auth.username || '';
+        var password = auth.password || '';
+        headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
+      }
+    });
+  }
+
+  function isNumber (value) {
+    return typeof value === 'number';
+  }
+
+  function isStandardBrowserEnv() {
+    if (!isNil(navigator) && (navigator.product === 'ReactNative' ||
+      navigator.product === 'NativeScript' ||
+      navigator.product === 'NS')) {
+      return false;
+    }
+    return (!isNil(window) && !isNil(document));
+  }
+
+  var isURLSameOrigin = isStandardBrowserEnv() ?
+
+    (function standardBrowserEnv() {
+      var msie = /(msie|trident)/i.test(navigator.userAgent);
+      var urlParsingNode = document.createElement('a');
+      var originURL;
+
+      function resolveURL(url) {
+        var href = url;
+
+        if (msie) {
+          urlParsingNode.setAttribute('href', href);
+          href = urlParsingNode.href;
+        }
+
+        urlParsingNode.setAttribute('href', href);
+
+        return {
+          href: urlParsingNode.href,
+          protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
+          host: urlParsingNode.host,
+          search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
+          hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
+          hostname: urlParsingNode.hostname,
+          port: urlParsingNode.port,
+          pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
+            urlParsingNode.pathname :
+            '/' + urlParsingNode.pathname
+        };
+      }
+
+      originURL = resolveURL(window.location.href);
+
+      return function isURLSameOrigin(requestURL) {
+        var parsed = (isString(requestURL)) ? resolveURL(requestURL) : requestURL;
+        return (parsed.protocol === originURL.protocol &&
+          parsed.host === originURL.host);
+      };
+    })() :
+
+    (function nonStandardBrowserEnv() {
+      return function isURLSameOrigin() {
+        return true;
+      };
+    })();
+
+  var cookies = {
+    set: function set() { },
+    get: function get() { return null; },
+    remove: function remove() { }
+  };
+
+  if (isStandardBrowserEnv) {
+    cookies.set = function set(name, value, expires, path, domain, secure) {
+      var cookie = [];
+      cookie.push(name + '=' + encodeURIComponent(value));
+
+      if (isNumber(expires)) {
+        cookie.push('expires=' + new Date(expires).toGMTString());
+      }
+
+      if (isString(path)) {
+        cookie.push('path=' + path);
+      }
+
+      if (isString(domain)) {
+        cookie.push('domain=' + domain);
+      }
+
+      if (secure === true) {
+        cookie.push('secure');
+      }
+
+      document.cookie = cookie.join('; ');
+    };
+
+    cookies.get = function get(name) {
+      var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+      return (match ? decodeURIComponent(match[3]) : null);
+    };
+
+    cookies.remove = function remove(name) {
+      this.write(name, '', Date.now() - 86400000);
+    };
+  }
+
+  function xsrf (ref) {
+    var xhrHooks = ref.xhrHooks;
+
+    xhrHooks.request.push(function (ref) {
+      var url = ref.url;
+      var withCredentials = ref.withCredentials;
+      var xsrfHeaderName = ref.xsrfHeaderName;
+      var xsrfCookieName = ref.xsrfCookieName;
+      var headers = ref.headers;
+
+      // 判断是浏览器环境
+      if (isStandardBrowserEnv()) {
+        // 增加 xsrf header
+        var xsrfValue = (withCredentials || isURLSameOrigin(url)) && xsrfCookieName ?
+          cookies.get(xsrfCookieName) :
+          undefined;
+
+        if (xsrfValue) {
+          headers[xsrfHeaderName] = xsrfValue;
+        }
+      }
+    });
+  }
+
+  var rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
+  function parseRawHeaders(rawHeaders) {
+    var responseHeaders = {};
+    var match;
+    while ((match = rheaders.exec(rawHeaders))) {
+      responseHeaders[match[1].toLowerCase()] = match[2];
+    }
+    return responseHeaders;
+  }
+
+  function resHeaders (ref) {
+    var xhrHooks = ref.xhrHooks;
+
+    xhrHooks.response.push(function (xhr, res, ref) {
+      var getAllResponseHeaders = ref.getAllResponseHeaders;
+
+      if (getAllResponseHeaders && xhr.getAllResponseHeaders) {
+        res.headers = parseRawHeaders(xhr.getAllResponseHeaders());
+      }
+    });
+  }
+
+  instance
+    .use(oauth)
+    .use(xsrf)
+    .use(resHeaders);
+
+  instance.plugins = { oauth: oauth, xsrf: xsrf, resHeaders: resHeaders };
+
   return instance;
 
 }));

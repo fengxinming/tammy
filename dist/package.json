@@ -1,6 +1,6 @@
 {
   "name": "tammy",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.1",
   "description": "Promise based HTTP client for the browser and node.js.",
   "main": "./tammy.common.js",
   "module": "./tammy.es.js",
@@ -35,7 +35,7 @@
     "@babel/core": "^7.2.2",
     "@babel/preset-env": "^7.3.1",
     "babel-jest": "^24.0.0",
-    "corie-console": "^2.0.0-beta.1",
+    "clrsole": "^1.0.0-beta.0",
     "corie-utils": "^3.0.3",
     "eslint": "^5.12.0",
     "eslint-config-standard": "^12.0.0",

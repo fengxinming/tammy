@@ -53,6 +53,13 @@ describe('测试 tammy', () => {
         })
       );
     });
+
+    await tammy(url, {
+      params: 'aa=aa&bb=bb',
+      cache: false
+    }).then(({ options }) => {
+      expect(options.url.match(/[?&]_=[^&]*/g).length).toBe(1);
+    });
   });
 
   it('测试 post 请求', async () => {
@@ -163,14 +170,16 @@ describe('测试 tammy', () => {
   });
 
   it('测试拦截器', async () => {
-    newTammy.hookRequest((options) => {
-      options.headers = { 'X-SB-X': 'SB' };
-      return options;
-    });
-    newTammy.hookResponse((res) => {
-      const { options } = res;
-      expect(options.headers['X-SB-X']).toBe('SB');
-      return res;
+    newTammy.use(({ interceptors }) => {
+      interceptors.request.use((options) => {
+        options.headers = { 'X-SB-X': 'SB' };
+        return options;
+      });
+      interceptors.response.use((res) => {
+        const { options } = res;
+        expect(options.headers['X-SB-X']).toBe('SB');
+        return res;
+      });
     });
     await newTammy(url);
   });
@@ -205,23 +214,6 @@ describe('测试 tammy', () => {
     }
   });
 
-  it('测试处理headers', async () => {
-    await tammy({
-      url,
-      headers: {
-        'Content-Type': ''
-      },
-      method: 'POST',
-      getAllResponseHeaders: true
-    }).then(({ headers }) => {
-      expect(headers).toEqual(
-        expect.objectContaining({
-          'content-type': 'application/json;charset=utf-8'
-        })
-      );
-    });
-  });
-
   it('测试处理超时', async () => {
     window.XMLHttpRequest = makeXHR({ timeout: 100 });
     try {
@@ -235,7 +227,7 @@ describe('测试 tammy', () => {
         getAllResponseHeaders: true
       });
     } catch (e) {
-      expect(e.code).toBe('ECONNABORTED');
+      expect(e.code).toBe('ETIMEOUT');
     }
     window.XMLHttpRequest = makeXHR();
   });
@@ -271,7 +263,7 @@ describe('测试 tammy', () => {
         getAllResponseHeaders: true
       });
     } catch (e) {
-      expect(e.code).toBe('ECONNABORTED');
+      expect(tammy.isAborted(e)).toBe(true);
     }
     window.XMLHttpRequest = makeXHR();
   });

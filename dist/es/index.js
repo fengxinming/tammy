@@ -1,6 +1,6 @@
 import isObject from 'celia/es/isObject';
 import Tammy from './lib/Tammy';
-import context from './lib/context';
+import { ECONNABORTED } from './lib/constants';
 import { merge, assign } from './lib/util';
 import Abortion from './lib/Abortion';
 
@@ -35,29 +35,9 @@ function createInstance(options) {
      */
     use(fn) {
       if (!fn.installed) {
-        fn(context);
+        fn(tammy);
         fn.installed = true;
       }
-      return $http;
-    },
-
-    /**
-     * 拦截请求
-     * @param {Function} fulfilled
-     * @param {Function} rejected
-     */
-    hookRequest(fulfilled, rejected) {
-      tammy.hook('reqHooks', fulfilled, rejected);
-      return $http;
-    },
-
-    /**
-     * 拦截响应
-     * @param {Function} fulfilled
-     * @param {Function} rejected
-     */
-    hookResponse(fulfilled, rejected) {
-      tammy.hook('resHooks', fulfilled, rejected);
       return $http;
     },
 
@@ -83,6 +63,13 @@ function createInstance(options) {
      */
     map(...opts) {
       return $http.all(opts);
+    },
+
+    /**
+     * 是否是中断异常
+     */
+    isAborted(e) {
+      return e && e.code === ECONNABORTED;
     }
   });
 
@@ -91,6 +78,8 @@ function createInstance(options) {
       return $http(url, merge({ method, data }, options));
     };
   });
+
+  $http.del = $http['delete'];
 
   return $http;
 }

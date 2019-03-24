@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.0
+ * tammy.js v1.0.0-beta.1
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -114,9 +114,9 @@ if (isStandardBrowserEnv) {
 }
 
 function index (ref) {
-  var xhrHeaderHooks = ref.xhrHeaderHooks;
+  var xhrHooks = ref.xhrHooks;
 
-  xhrHeaderHooks[xhrHeaderHooks.length] = function (ref) {
+  xhrHooks.request.push(function (ref) {
     var url = ref.url;
     var withCredentials = ref.withCredentials;
     var xsrfHeaderName = ref.xsrfHeaderName;
@@ -134,7 +134,7 @@ function index (ref) {
         headers[xsrfHeaderName] = xsrfValue;
       }
     }
-  };
+  });
 }
 
 module.exports = index;

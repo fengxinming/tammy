@@ -7,9 +7,14 @@ export default {
   defaults,
 
   /**
-   * 处理headers的钩子函数
+   * 处理xhr请求的钩子函数
    */
-  xhrHeaderHooks: [],
+  xhrReqHooks: [],
+
+  /**
+   * 处理xhr响应的钩子函数
+   */
+  xhrResHooks: [],
 
   /**
    * 请求钩子

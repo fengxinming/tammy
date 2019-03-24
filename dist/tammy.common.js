@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.0
+ * tammy.js v1.0.0-beta.1
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -82,13 +82,6 @@ function joinURLs (baseURL) {
   return baseURL;
 }
 
-function append$1 (arr, obj) {
-  if (arr) {
-    append(arr, obj);
-    return obj;
-  }
-}
-
 function forIn (value, iterator, context) {
   var cb = iteratorCallback(iterator, context);
   for (var key in value) {
@@ -109,7 +102,17 @@ function forEach$1 (value, iterator, context) {
   return value && forEach(value, iterator, context);
 }
 
-var rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
+function append$1 (arr, obj) {
+  if (arr) {
+    append(arr, obj);
+    return obj;
+  }
+}
+
+function removeAt (elems, index) {
+  elems.splice(index, 1);
+  return index;
+}
 
 /**
  * 派生对象
@@ -154,15 +157,6 @@ function merge(result) {
   return result;
 }
 
-function parseRawHeaders(rawHeaders) {
-  var responseHeaders = {};
-  var match;
-  while ((match = rheaders.exec(rawHeaders))) {
-    responseHeaders[match[1].toLowerCase()] = match[2];
-  }
-  return responseHeaders;
-}
-
 /**
  * 创建异常
  * @param {String} message
@@ -201,17 +195,123 @@ function preloadHooks(promise, hooks) {
   return promise;
 }
 
+/**
+ * 拼接querystring
+ * @param {String} url
+ * @param {String} qs
+ */
+function joinQS(url, qs) {
+  return url + (url.indexOf('?') > -1 ? '?' : '&') + qs;
+}
+
+var RCACHE = /([?&]_=)[^&]*/;
+var nonce = Date.now();
+/**
+ * 禁用get请求缓存
+ * @param {String} url
+ */
+function disableCache(url) {
+  nonce++;
+  var newUrl = url.replace(RCACHE, ("$1" + nonce));
+  // url上未使用缓存标识
+  if (newUrl === url) {
+    url = joinQS(url, '_=' + nonce);
+  }
+  return url;
+}
+
 var logErr = (console && console.error) || function () { };
 
-var CONTENT_TYPES = {
-  json: 'application/json; charset=UTF-8',
-  form: 'application/x-www-form-urlencoded; charset=UTF-8',
-  multipart: 'multipart/form-data; charset=UTF-8'
-};
+function interceptor(arr) {
+  arr.use = function (fulfilled, rejected) {
+    append$1(arr, { fulfilled: fulfilled, rejected: rejected });
+    return arr;
+  };
+  arr.eject = function (index) {
+    removeAt(index);
+    return arr;
+  };
+  return arr;
+}
 
-var DEFAULT_POST_HEADERS = {
-  'Content-Type': CONTENT_TYPES.form
-};
+var CONTENT_TYPE = 'Content-Type';
+
+function request(options) {
+  var url = options.url;
+  var cache = options.cache;
+  var baseURL = options.baseURL;
+  var headers = options.headers;
+  var method = options.method;
+  var params = options.params;
+  var data = options.data;
+  var adapter = options.adapter;
+
+  if (baseURL && !isAbsolute(url)) {
+    url = joinURLs(baseURL, url);
+  }
+
+  switch (method) {
+    // case 'HEAD':
+    case 'GET':
+      if (!params) {
+        // 避免在发送get请求时，把data属性当作params
+        options.params = params = data;
+        options.data = data = undefined;
+      }
+      break;
+    case 'POST':
+      // 校验post数据格式
+      var ctype = headers[CONTENT_TYPE] || '';
+      if (isObject(data)) {
+        if (!ctype.indexOf('application/json')) {
+          data = JSON.stringify(data);
+        } else {
+          data = toFormString(data);
+        }
+        options.data = data;
+      }
+      break;
+  }
+
+  if (params) {
+    if (isObject(params)) {
+      params = stringify(params);
+    }
+    url = joinQS(url, params);
+  }
+  if (cache === false && ['HEAD', 'GET'].indexOf(method) > -1) {
+    url = disableCache(url);
+  }
+
+  options.url = url;
+
+  return adapter(options).then(function (response) {
+    var options = response.options;
+    var data = response.data;
+    if (options.responseType === 'json' && isString(data)) {
+      try {
+        response.data = JSON.parse(data);
+      } catch (e) {
+        logErr('parse data error: ', e);
+      }
+    }
+    return response;
+  });
+}
+
+/**
+ * http请求
+ * @param {Object} opts
+ */
+function request$1 (opts, reqHooks, resHooks) {
+  var promise = Promise.resolve(opts);
+  // 优先挂在全局钩子
+  promise = preloadHooks(
+    preloadHooks(promise, reqHooks).then(request),
+    resHooks
+  );
+  return promise;
+}
 
 var defaults = {
   timeout: 0,
@@ -224,62 +324,14 @@ var defaults = {
   }
 };
 
-var defaultHeaders = {
-  common: {
-    'Accept': 'application/json, text/plain, */*'
-  }
-};
-
-['DELETE', 'GET', 'HEAD'].forEach(function (method) {
-  defaultHeaders[method] = {};
-});
-
-['POST', 'PUT', 'PATCH'].forEach(function (method) {
-  defaultHeaders[method] = assign({}, DEFAULT_POST_HEADERS);
-});
-
-var context = {
-  /**
-   * 设置全局默认配置
-   */
-  defaults: defaults,
-
-  /**
-   * 处理headers的钩子函数
-   */
-  xhrHeaderHooks: [],
-
-  /**
-   * 请求钩子
-   */
-  reqHooks: [],
-
-  /**
-   * 响应钩子
-   */
-  resHooks: [],
-
-  /**
-   * 设置全局headers
-   * @param {String} key
-   * @param {String} value
-   * @param {String|undefined} method
-   */
-  setHeader: function setHeader(key, value, method) {
-    method = method ? method.toUpperCase() : 'common';
-    if (key === 'Content-Type') {
-      value = CONTENT_TYPES[value] || value;
-    }
-    (defaultHeaders[method] || defaultHeaders.common)[key] = value;
-    return this;
-  }
-};
-
 function isFunction (value) {
   return typeof value === 'function';
 }
 
-var xhrHeaderHooks = context.xhrHeaderHooks;
+var CONTENT_TYPE$1 = 'Content-Type';
+var ECONNABORTED = 'ECONNABORTED';
+var ETIMEOUT = 'ETIMEOUT';
+var ENETWORK = 'ENETWORK';
 
 function xhr (options) {
   return new Promise(function (resolve, reject) {
@@ -287,13 +339,12 @@ function xhr (options) {
     var url = options.url;
     var data = options.data;
     var async = options.async;
-    var headers = options.headers;
     var timeout = options.timeout;
     var responseType = options.responseType;
     var onDownloadProgress = options.onDownloadProgress;
     var onUploadProgress = options.onUploadProgress;
     var abortion = options.abortion;
-    var getAllResponseHeaders = options.getAllResponseHeaders;
+    var xhrHooks = options.xhrHooks;
 
     var request = new window.XMLHttpRequest();
 
@@ -328,9 +379,7 @@ function xhr (options) {
         status: status
       };
 
-      if (getAllResponseHeaders && 'getAllResponseHeaders' in request) {
-        response.headers = parseRawHeaders(request.getAllResponseHeaders());
-      }
+      xhrHooks.response.forEach(function (cb) { return cb(request, response, options); });
 
       if (options.validateStatus(status)) {
         resolve(response);
@@ -349,18 +398,27 @@ function xhr (options) {
       }
 
       reject(createError('Request aborted', assign({
-        code: 'ECONNABORTED',
+        code: ECONNABORTED,
         options: options,
         request: request
-      }, request.customError)));
+      }, request.abortedError)));
 
       // 垃圾回收
       request = null;
     };
 
+    // 主动中断请求
+    if (abortion) {
+      abortion.add(function (error) {
+        request.abortedError = error;
+        request.abort();
+      });
+    }
+
     // 监听网络错误
     request.onerror = function onerror() {
       reject(createError('Network Error', {
+        code: ENETWORK,
         options: options,
         request: request
       }));
@@ -372,7 +430,7 @@ function xhr (options) {
     // 监听超时处理
     request.ontimeout = function ontimeout() {
       reject(createError(("timeout of " + timeout + "ms exceeded"), {
-        code: 'ECONNABORTED',
+        code: ETIMEOUT,
         options: options,
         request: request
       }));
@@ -381,12 +439,13 @@ function xhr (options) {
       request = null;
     };
 
-    xhrHeaderHooks.forEach(function (cb) { return cb(options); });
+    xhrHooks.request.forEach(function (cb) { return cb(options); });
 
     // 增加 headers
-    if ('setRequestHeader' in request) {
+    var headers = options.headers;
+    if (isFunction(request.setRequestHeader)) {
       forIn$1(headers, function (val, key) {
-        if (isNil(data) && key === 'Content-Type') {
+        if (isNil(data) && key === CONTENT_TYPE$1) {
           // 如果data为空，就移除content-type
           delete headers[key];
         } else {
@@ -417,135 +476,118 @@ function xhr (options) {
       request.upload.addEventListener('progress', onUploadProgress);
     }
 
-    if (abortion) {
-      abortion.add(function (error) {
-        request.customError = error;
-        request.abort();
-      });
-    }
-
     // 发送数据到服务端
     request.send(data || null);
 
   });
 }
 
-var reqHooks = context.reqHooks;
-var resHooks = context.resHooks;
+var CONTENT_TYPES = {
+  json: 'application/json; charset=UTF-8',
+  form: 'application/x-www-form-urlencoded; charset=UTF-8',
+  multipart: 'multipart/form-data; charset=UTF-8'
+};
+
+var DEFAULT_POST_HEADERS = {
+  'Content-Type': CONTENT_TYPES.form
+};
+
+var defaultHeaders = {
+  common: {
+    'Accept': 'application/json, text/plain, */*'
+  }
+};
+
+['DELETE', 'GET', 'HEAD'].forEach(function (method) {
+  defaultHeaders[method] = {};
+});
+
+['POST', 'PUT', 'PATCH'].forEach(function (method) {
+  defaultHeaders[method] = assign({}, DEFAULT_POST_HEADERS);
+});
+
+/**
+ * 设置全局headers
+ * @param {String} key
+ * @param {String} value
+ * @param {String|undefined} method
+ */
+function setHeader(key, value, method) {
+  method = method ? method.toUpperCase() : 'common';
+  if (key === 'Content-Type') {
+    value = CONTENT_TYPES[value] || value;
+  }
+  (defaultHeaders[method] || defaultHeaders.common)[key] = value;
+  return this;
+}
+
+/**
+ * 合并headers
+ * @param {Object} headers
+ */
+function mergeHeaders(headers, method) {
+  return assign({}, defaultHeaders.common, defaultHeaders[method], headers);
+}
+
+/**
+ * json、form、multipart 或者实际的contentType
+ * @param {String} contentType
+ */
+function transformContentType(contentType) {
+  return contentType && CONTENT_TYPES[contentType];
+}
 
 // 默认为客户端请求
 defaults.adapter = xhr;
 
-function request(options) {
-  var url = options.url;
-  var baseURL = options.baseURL;
-  var headers = options.headers;
-  var method = options.method;
-  var contentType = options.contentType;
-  var params = options.params;
-  var data = options.data;
-  var adapter = options.adapter;
-
-  if (baseURL && !isAbsolute(url)) {
-    url = options.url = joinURLs(baseURL, url);
-  }
-
-  method = options.method = method ? method.toUpperCase() : 'GET';
-
-  // 合并headers
-  headers = options.headers = merge({}, defaultHeaders.common, defaultHeaders[method], headers);
-  var ctype;
-  if ((ctype = contentType && CONTENT_TYPES[contentType])) {
-    headers['Content-Type'] = ctype;
-  }
-
-  switch (method) {
-    // case 'HEAD':
-    case 'GET':
-      if (!params) {
-        // 避免在发送get请求时，把data属性当作params
-        options.params = params = data;
-        options.data = data = undefined;
-      }
-      break;
-    case 'POST':
-      // 校验post数据格式
-      ctype = headers['Content-Type'] || '';
-      if (isObject(data)) {
-        if (!ctype.indexOf('application/json')) {
-          data = JSON.stringify(data);
-        } else {
-          data = toFormString(data);
-        }
-        options.data = data;
-      }
-      break;
-  }
-
-  if (isObject(params)) {
-    params = stringify(params);
-  }
-  if (isString(params)) {
-    options.url = url + (url.indexOf('?') > -1 ? '?' : '&') + params;
-  }
-
-  return adapter(options).then(function (response) {
-    var options = response.options;
-    var data = response.data;
-    if (options.responseType === 'json' && isString(data)) {
-      try {
-        response.data = JSON.parse(data);
-      } catch (e) {
-        logErr('parse data error: ', e);
-      }
-    }
-    return response;
-  });
-}
-
 var Tammy = function Tammy(options) {
-  // 请求钩子
-  this.reqHooks = [];
-  // 响应钩子
-  this.resHooks = [];
+  // 拦截器
+  this.interceptors = {
+    request: interceptor([]),
+    response: interceptor([])
+  };
+  // xhr钩子函数
+  this.xhrHooks = {
+    request: [],
+    response: []
+  };
   // 合并参数
-  this.options = options;
-};
-
-/**
- * 添加拦截器
- * @param {String} hookName 拦截器名称
- * @param {Function} fulfilled 成功回调
- * @param {Function} rejected 异常回调
- */
-Tammy.prototype.hook = function hook (hookName, fulfilled, rejected) {
-  append$1(this[hookName], { fulfilled: fulfilled, rejected: rejected });
-  return this;
+  this.defaults = merge({}, defaults, options);
 };
 
 /**
  * http请求
- * @param {String|Object} url
- * @param {Object|undefined} options
+ * @param {Object} opts
  */
-Tammy.prototype.request = function request$1 (opts) {
+Tammy.prototype.request = function request$1$1 (opts) {
   // 合并全局参数
-  opts = assign(merge({}, defaults), this.options, opts);
+  opts = assign({}, this.defaults, opts);
 
-  var promise = Promise.resolve(opts);
-  // 优先挂在全局钩子
-  promise = preloadHooks(
-    preloadHooks(
-      preloadHooks(
-        preloadHooks(promise, reqHooks),
-        this.reqHooks
-      ).then(request),
-      resHooks
-    ),
-    this.resHooks
-  );
-  return promise;
+  var method = opts.method;
+    var headers = opts.headers;
+    var contentType = opts.contentType;
+  method = opts.method = method ? method.toUpperCase() : 'GET';
+
+  // 合并headers
+  headers = opts.headers = mergeHeaders(headers, method);
+  var ctype;
+  if ((ctype = transformContentType(contentType))) {
+    headers[CONTENT_TYPE$1] = ctype;
+  }
+
+  var ref = this;
+    var xhrHooks = ref.xhrHooks;
+  opts.xhrHooks = xhrHooks;
+  return request$1(opts, xhrHooks.request, xhrHooks.response);
 };
+
+/**
+ * 设置全局headers
+ * @param {String} key
+ * @param {String} value
+ * @param {String|undefined} method
+ */
+Tammy.prototype.setHeader = setHeader;
 
 var Abortion = function Abortion() {
   this.queue = [];
@@ -619,29 +661,9 @@ function createInstance(options) {
      */
     use: function use(fn) {
       if (!fn.installed) {
-        fn(context);
+        fn(tammy);
         fn.installed = true;
       }
-      return $http;
-    },
-
-    /**
-     * 拦截请求
-     * @param {Function} fulfilled
-     * @param {Function} rejected
-     */
-    hookRequest: function hookRequest(fulfilled, rejected) {
-      tammy.hook('reqHooks', fulfilled, rejected);
-      return $http;
-    },
-
-    /**
-     * 拦截响应
-     * @param {Function} fulfilled
-     * @param {Function} rejected
-     */
-    hookResponse: function hookResponse(fulfilled, rejected) {
-      tammy.hook('resHooks', fulfilled, rejected);
       return $http;
     },
 
@@ -670,6 +692,13 @@ function createInstance(options) {
       while ( len-- ) opts[ len ] = arguments[ len ];
 
       return $http.all(opts);
+    },
+
+    /**
+     * 是否是中断异常
+     */
+    isAborted: function isAborted(e) {
+      return e && e.code === ECONNABORTED;
     }
   });
 
@@ -678,6 +707,8 @@ function createInstance(options) {
       return $http(url, merge({ method: method, data: data }, options));
     };
   });
+
+  $http.del = $http['delete'];
 
   return $http;
 }

@@ -1,14 +1,14 @@
 /*!
- * tammy.js v1.0.0-beta.0
+ * tammy.js v1.0.0-beta.1
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
 'use strict';
 
 function index (ref) {
-  var xhrHeaderHooks = ref.xhrHeaderHooks;
+  var xhrHooks = ref.xhrHooks;
 
-  xhrHeaderHooks[xhrHeaderHooks.length] = function (ref) {
+  xhrHooks.request.push(function (ref) {
     var auth = ref.auth;
     var headers = ref.headers;
 
@@ -18,7 +18,7 @@ function index (ref) {
       var password = auth.password || '';
       headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
     }
-  };
+  });
 }
 
 module.exports = index;

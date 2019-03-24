@@ -16,7 +16,7 @@ describe('测试 oauth', () => {
     });
   });
 
-  it('测试主方法', async () => {
+  it('测试oauth认证', async () => {
     tammy.use(oauth);
 
     // 防重复加载

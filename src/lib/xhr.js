@@ -1,10 +1,8 @@
 import forIn from 'celia/es/forIn';
 import isNil from 'celia/es/isNil';
 import isFunction from 'celia/es/isFunction';
-import { parseRawHeaders, createError, logErr, assign } from './util';
-import context from './context';
-
-const { xhrHeaderHooks } = context;
+import { createError, logErr, assign } from './util';
+import { CONTENT_TYPE, ECONNABORTED, ETIMEOUT, ENETWORK } from './constants';
 
 export default function (options) {
   return new Promise((resolve, reject) => {
@@ -13,13 +11,12 @@ export default function (options) {
       url,
       data,
       async,
-      headers,
       timeout,
       responseType,
       onDownloadProgress,
       onUploadProgress,
       abortion,
-      getAllResponseHeaders
+      xhrHooks
     } = options;
 
     let request = new window.XMLHttpRequest();
@@ -53,9 +50,7 @@ export default function (options) {
         status
       };
 
-      if (getAllResponseHeaders && 'getAllResponseHeaders' in request) {
-        response.headers = parseRawHeaders(request.getAllResponseHeaders());
-      }
+      xhrHooks.response.forEach(cb => cb(request, response, options));
 
       if (options.validateStatus(status)) {
         resolve(response);
@@ -74,18 +69,27 @@ export default function (options) {
       }
 
       reject(createError('Request aborted', assign({
-        code: 'ECONNABORTED',
+        code: ECONNABORTED,
         options,
         request
-      }, request.customError)));
+      }, request.abortedError)));
 
       // 垃圾回收
       request = null;
     };
 
+    // 主动中断请求
+    if (abortion) {
+      abortion.add((error) => {
+        request.abortedError = error;
+        request.abort();
+      });
+    }
+
     // 监听网络错误
     request.onerror = function onerror() {
       reject(createError('Network Error', {
+        code: ENETWORK,
         options,
         request
       }));
@@ -97,7 +101,7 @@ export default function (options) {
     // 监听超时处理
     request.ontimeout = function ontimeout() {
       reject(createError(`timeout of ${timeout}ms exceeded`, {
-        code: 'ECONNABORTED',
+        code: ETIMEOUT,
         options,
         request
       }));
@@ -106,12 +110,13 @@ export default function (options) {
       request = null;
     };
 
-    xhrHeaderHooks.forEach(cb => cb(options));
+    xhrHooks.request.forEach(cb => cb(options));
 
     // 增加 headers
-    if ('setRequestHeader' in request) {
+    const { headers } = options;
+    if (isFunction(request.setRequestHeader)) {
       forIn(headers, (val, key) => {
-        if (isNil(data) && key === 'Content-Type') {
+        if (isNil(data) && key === CONTENT_TYPE) {
           // 如果data为空，就移除content-type
           delete headers[key];
         } else {
@@ -140,13 +145,6 @@ export default function (options) {
 
     if (isFunction(onUploadProgress) && request.upload) {
       request.upload.addEventListener('progress', onUploadProgress);
-    }
-
-    if (abortion) {
-      abortion.add((error) => {
-        request.customError = error;
-        request.abort();
-      });
     }
 
     // 发送数据到服务端
