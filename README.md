@@ -10,7 +10,7 @@
 
   - [Installation](#Installation)
   - [Usage](#Usage)
-  - [tammy API](#tammy-API)
+  - [Tammy API](#Tammy-API)
   - [Request Options](#Request-Options)
   - [Options Defaults](#Options-Defaults)
   - [Interceptors](#Interceptors)
