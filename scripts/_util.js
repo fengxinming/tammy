@@ -12,7 +12,7 @@ const { uglify } = require('rollup-plugin-uglify');
 
 const {
   version
-} = require('../../package.json');
+} = require('../package.json');
 
 const DIST_FILENAME = exports.DIST_FILENAME = 'tammy';
 
@@ -23,7 +23,7 @@ const banner = exports.banner =
   ' * Released under the MIT License.\n' +
   ' */';
 
-const resolve = exports.resolve = p => path.resolve(__dirname, '..', '..', p);
+const resolve = exports.resolve = p => path.resolve(__dirname, '..', p);
 
 exports.sourceDir = fs
   .readdirSync(resolve('src'))

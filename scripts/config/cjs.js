@@ -1,7 +1,7 @@
 'use strict';
 
 const { matches } = require('corie-utils');
-const { resolve, sourceDir, DIST_FILENAME } = require('./_util');
+const { resolve, sourceDir, DIST_FILENAME } = require('../_util');
 
 function configure(input, output) {
   const isDIR = input.indexOf('*') > -1;

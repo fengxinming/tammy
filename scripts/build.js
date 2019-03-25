@@ -7,16 +7,16 @@ const { promisify } = require('util');
 const rollup = require('rollup');
 const zlib = require('zlib');
 const rimraf = require('rimraf');
-const Console = require('corie-console');
+const { getLogger } = require('clrsole');
 const { minify } = require('uglify-js');
 const cp = require('./cp');
+const { genConfig, resolve, sourceDir, banner, DIST_FILENAME } = require('./_util');
 
-let builds = require('./config').getAllBuilds();
-const { resolve, sourceDir, banner, DIST_FILENAME } = require('./config/_util');
+let builds = getAllBuilds();
 
 const gzip = promisify(zlib.gzip);
 const writeFileify = promisify(writeFile);
-const logger = new Console('celia');
+const logger = getLogger('celia');
 
 if (process.argv[2]) {
   const filters = process.argv[2].split(',');
@@ -24,6 +24,19 @@ if (process.argv[2]) {
     return filters.some(f => b._name.indexOf(f) > -1);
   });
 }
+
+function getAllBuilds() {
+  let mods = [];
+  readdirSync(join(__dirname, 'config'))
+    .forEach((key) => {
+      require(`./config/${key}`)
+        .forEach((config) => {
+          mods[mods.length] = genConfig(key, config);
+        });
+    });
+  return mods;
+};
+
 
 /**
  * 编译所有的js

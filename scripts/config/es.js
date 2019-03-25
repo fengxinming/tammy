@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolve, DIST_FILENAME } = require('./_util');
+const { resolve, DIST_FILENAME } = require('../_util');
 
 function configure() {
   return {

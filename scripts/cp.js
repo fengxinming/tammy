@@ -2,10 +2,10 @@
 
 const fs = require('fs');
 const { exec } = require('child_process');
-const Console = require('corie-console');
-const { resolve } = require('./config/_util');
+const { getLogger } = require('clrsole');
+const { resolve } = require('./_util');
 
-const logger = new Console('celia');
+const logger = getLogger('celia');
 
 function copyFile(command) {
   exec(command, (error, stdout, stderr) => {
