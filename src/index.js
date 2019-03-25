@@ -2,7 +2,7 @@ import isObject from 'celia/es/isObject';
 import Tammy from './lib/Tammy';
 import { ECONNABORTED } from './lib/constants';
 import { merge, assign } from './lib/util';
-import { abort, abortAll } from './lib/abortion';
+import { abort, abortAll } from './lib/abort';
 
 function createInstance(options) {
   const tammy = new Tammy(options);

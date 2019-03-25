@@ -3,7 +3,7 @@ import isNil from 'celia/es/isNil';
 import isFunction from 'celia/es/isFunction';
 import { createError, logErr, assign } from './util';
 import { CONTENT_TYPE, ECONNABORTED, ETIMEOUT, ENETWORK } from './constants';
-import { push, managers } from './abortion';
+import { push, managers } from './abort';
 
 function clearAbortions(options) {
   delete managers[options.abortedToken];
