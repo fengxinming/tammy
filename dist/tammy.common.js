@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.1
+ * tammy.js v1.0.0-beta.2
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -222,6 +222,10 @@ function disableCache(url) {
 
 var logErr = (console && console.error) || function () { };
 
+/**
+ * 扩展拦截器自定义方法
+ * @param {Array} arr 
+ */
 function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
     append$1(arr, { fulfilled: fulfilled, rejected: rejected });
@@ -686,17 +690,6 @@ function createInstance(options) {
      */
     all: function all(opts) {
       return Promise.all(opts.map(function (opt) { return $http(opt); }));
-    },
-
-    /**
-     * 合并提交
-     * @param  {...Object} opts
-     */
-    map: function map() {
-      var opts = [], len = arguments.length;
-      while ( len-- ) opts[ len ] = arguments[ len ];
-
-      return $http.all(opts);
     },
 
     /**

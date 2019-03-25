@@ -53,14 +53,6 @@ function createInstance(options) {
     },
 
     /**
-     * 合并提交
-     * @param  {...Object} opts
-     */
-    map(...opts) {
-      return $http.all(opts);
-    },
-
-    /**
      * 是否是中断异常
      */
     isAborted(e) {

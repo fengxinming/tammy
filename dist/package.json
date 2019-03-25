@@ -1,7 +1,7 @@
 {
   "name": "tammy",
-  "version": "1.0.0-beta.1",
-  "description": "Promise based HTTP client for the browser and node.js.",
+  "version": "1.0.0-beta.2",
+  "description": "Tiny promise based HTTP client for the browser and node.js.",
   "main": "./tammy.common.js",
   "module": "./tammy.es.js",
   "unpkg": "./tammy.js",
@@ -16,14 +16,13 @@
     "url": "git+https://github.com/fengxinming/tammy.git"
   },
   "keywords": [
-    "js",
-    "javascript",
-    "common",
-    "util",
-    "utils",
-    "tammy",
-    "lodash",
-    "underscore"
+    "xhr",
+    "XMLHttpRequest",
+    "fetch",
+    "http",
+    "ajax",
+    "promise",
+    "node"
   ],
   "author": "Jesse Feng",
   "license": "MIT",

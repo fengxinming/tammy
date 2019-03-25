@@ -159,15 +159,6 @@ describe('测试 tammy', () => {
         })
       );
     });
-
-    await tammy.map(url, url2).then(([{ data }]) => {
-      expect(data).toEqual(
-        expect.objectContaining({
-          code: expect.any(Number),
-          message: expect.any(String)
-        })
-      );
-    });
   });
 
   it('测试拦截器', async () => {
@@ -238,13 +229,13 @@ describe('测试 tammy', () => {
       expect(e.message).toBe('Request aborted');
     }
 
-    sleep(100);
+    await sleep(100);
 
     setTimeout(() => {
       tammy.abortAll({ message: '测试终止请求2' });
     }, 100);
 
-    await expect(tammy.map({
+    await expect(tammy.all([{
       url,
       abortion(t) {
         token = t;
@@ -256,21 +247,21 @@ describe('测试 tammy', () => {
         bb: 'bb'
       }
     }, {
-        url,
-        abortion(t) {
-          token = t;
-        },
-        method: 'POST',
-        contentType: 'json',
-        data: {
-          aa: 'aa',
-          bb: 'bb'
-        }
-      })).rejects.toEqual(
-        expect.objectContaining({
-          message: '测试终止请求2'
-        })
-      );
+      url,
+      abortion(t) {
+        token = t;
+      },
+      method: 'POST',
+      contentType: 'json',
+      data: {
+        aa: 'aa',
+        bb: 'bb'
+      }
+    }])).rejects.toEqual(
+      expect.objectContaining({
+        message: '测试终止请求2'
+      })
+    );
 
   });
 

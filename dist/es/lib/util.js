@@ -121,6 +121,10 @@ export function disableCache(url) {
 
 export const logErr = (console && console.error) || function () { };
 
+/**
+ * 扩展拦截器自定义方法
+ * @param {Array} arr 
+ */
 export function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
     append(arr, { fulfilled, rejected });

@@ -1,4 +1,4 @@
-# tammy
+# Tammy
 
 [![npm package](https://nodei.co/npm/tammy.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy)
 
@@ -15,7 +15,8 @@
   - [Options Defaults](#Options-Defaults)
   - [Interceptors](#Interceptors)
   - [Handling Errors](#Handling-Errors)
-  - [Release History](#Release-History)
+  - [Abortion](#Abortion)
+  - [License](#License)
 
 ---
 
@@ -153,22 +154,12 @@ tammy.all([{
     num: 1
   }
 }, '/user/12345/permissions'])
-  .then(tammy.spread(function (acct, perms) {
+  .then(function (arr) {
     // Both requests are now complete
-  }));
-
-tammy.map({
-  url: '/user/12345',
-  params: {
-    num: 1
-  }
-}, '/user/12345/permissions')
-  .then(tammy.spread(function (acct, perms) {
-    // Both requests are now complete
-  }));
+  });
 ```
 
-## tammy API
+## Tammy API
 
 Requests can be made by passing the relevant config to `tammy`.
 
@@ -528,11 +519,12 @@ tammy.get('/user/12345', {
 You can abort a request using a *Abortion*.
 
 ```js
-const Abortion = tammy.Abortion;
-const abortion = new Abortion();
+let abortionToken;
 
 tammy.get('/user/12345', {
-  abortion
+  abortion(token) {
+    abortionToken = token;
+  }
 }).catch(function (thrown) {
   if (tammy.isAborted(thrown)) {
     console.log('Request aborted', thrown.message);
@@ -543,12 +535,13 @@ tammy.get('/user/12345', {
 
 tammy.post('/user/12345', {
   name: 'new name'
-}, {
-  abortion
 })
 
 // abort the request (the message parameter is optional)
-abortion.abort('Operation aborted by the user.');
+tammy.abort('Operation aborted by the user.');
+
+// abort all requests
+tammy.abortAll();
 ```
 
 > Note: you can abort several requests.
