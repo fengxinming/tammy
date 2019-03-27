@@ -250,7 +250,7 @@ These are the available options for making requests. Only the `url` is required.
   headers: {'X-Requested-With': 'XMLHttpRequest'},
 
   // `params` are the URL parameters to be sent with the request
-  // Must be a plain object
+  // It can be a plain object or query string
   params: {
     ID: 12345
   },
@@ -311,10 +311,10 @@ These are the available options for making requests. Only the `url` is required.
   // or `undefined`), the promise will be resolved; otherwise, the promise will be
   // rejected.
   validateStatus: function (status) {
-    return status >= 200 && status < 300; // default
+    return (status >= 200 && status < 300) || status === 304; // default
   },
 
-  // `Abortion` specifies a abortion token that can be used to abort the request
+  // `abortion` specifies a abortion token that can be used to abort the request
   // (see Abortion section below for details)
   abortion: function(token) {
     t = token;
