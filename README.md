@@ -29,7 +29,7 @@
 
 // or
 
-<script src="https://cdn.jsdelivr.net/npm/tammy/tammy-all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tammy/tammy.browser.min.js"></script>
 ```
 
 ### CommonJS style with npm

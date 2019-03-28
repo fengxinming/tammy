@@ -1,7 +1,7 @@
 import isObject from 'celia/es/isObject';
-import isFunction from 'celia/es/isFunction';
 import { createError } from './util';
 import forIn from 'celia/es/forIn';
+import { ECONNRESET } from './constants';
 
 export const managers = {};
 
@@ -10,22 +10,21 @@ function uuid() {
 }
 
 function buildError(anything) {
-  let options;
+  let options = {};
   if (!anything) {
     anything = 'Request aborted';
   } else if (isObject(anything)) {
     options = anything;
-    anything = anything.message;
+    anything = anything.message || '';
   }
-  return createError(anything || '', options);
+  options.code = ECONNRESET;
+  return createError(anything, options);
 }
 
 export function abort(token, anything, ctx) {
   const fn = managers[token];
-  if (isFunction(fn)) {
-    fn(buildError(anything));
-    delete managers[token];
-  }
+  fn(buildError(anything));
+  delete managers[token];
   return ctx;
 }
 
@@ -41,4 +40,8 @@ export function push(fn) {
   const token = uuid();
   managers[token] = fn;
   return token;
+}
+
+export function isAborted(e) {
+  return e && e.code === ECONNRESET;
 }

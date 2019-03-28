@@ -3,7 +3,7 @@ import { assign } from './util';
 export const CONTENT_TYPES = {
   json: 'application/json; charset=UTF-8',
   form: 'application/x-www-form-urlencoded; charset=UTF-8',
-  multipart: 'multipart/form-data; charset=UTF-8'
+  'form-data': 'multipart/form-data; charset=UTF-8'
 };
 
 const DEFAULT_POST_HEADERS = {

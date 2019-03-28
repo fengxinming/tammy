@@ -5,6 +5,8 @@ import forEach from 'celia/es/forEach';
 import append from 'celia/es/array/append';
 import removeAt from 'celia/es/array/removeAt';
 
+import { ETIMEOUT, ENETWORK } from './constants';
+
 /**
  * 派生对象
  * @param {Object} target
@@ -123,7 +125,7 @@ export const logErr = (console && console.error) || function () { };
 
 /**
  * 扩展拦截器自定义方法
- * @param {Array} arr 
+ * @param {Array} arr
  */
 export function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
@@ -135,4 +137,34 @@ export function interceptor(arr) {
     return arr;
   };
   return arr;
+}
+
+/**
+ * 创建网络状态异常
+ * @param {Number} status
+ * @param {Object} options
+ */
+export function createStatusError(status, options) {
+  options.code = status;
+  return createError(`Request failed with status code ${status}`, options);
+}
+
+/**
+ * 创建超时异常
+ * @param {Number} timeout
+ * @param {Object} options
+ */
+export function createTimeoutError(timeout, options) {
+  options.code = ETIMEOUT;
+  return createError(`Timeout of ${timeout}ms exceeded`, options);
+}
+
+/**
+ * 创建网络请求异常
+ * @param {String} message
+ * @param {Object} options
+ */
+export function createNetworkError(message, options) {
+  options.code = ENETWORK;
+  return createError(message || 'Network Error');
 }

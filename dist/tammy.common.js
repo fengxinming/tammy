@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.3
+ * tammy.js v1.0.0-beta.4
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -12,10 +12,6 @@ function isNil (value) {
 
 function isObject (value) {
   return !isNil(value) && typeof value === 'object';
-}
-
-function isString (value) {
-  return typeof value === 'string';
 }
 
 function iteratorCallback (iterator, context) {
@@ -113,6 +109,11 @@ function removeAt (elems, index) {
   elems.splice(index, 1);
   return index;
 }
+
+var CONTENT_TYPE = 'Content-Type';
+var ECONNRESET = 'ECONNRESET';
+var ETIMEOUT = 'ETIMEOUT';
+var ENETWORK = 'ENETWORK';
 
 /**
  * 派生对象
@@ -224,7 +225,7 @@ var logErr = (console && console.error) || function () { };
 
 /**
  * 扩展拦截器自定义方法
- * @param {Array} arr 
+ * @param {Array} arr
  */
 function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
@@ -238,7 +239,37 @@ function interceptor(arr) {
   return arr;
 }
 
-var CONTENT_TYPE = 'Content-Type';
+/**
+ * 创建网络状态异常
+ * @param {Number} status
+ * @param {Object} options
+ */
+function createStatusError(status, options) {
+  options.code = status;
+  return createError(("Request failed with status code " + status), options);
+}
+
+/**
+ * 创建超时异常
+ * @param {Number} timeout
+ * @param {Object} options
+ */
+function createTimeoutError(timeout, options) {
+  options.code = ETIMEOUT;
+  return createError(("Timeout of " + timeout + "ms exceeded"), options);
+}
+
+/**
+ * 创建网络请求异常
+ * @param {String} message
+ * @param {Object} options
+ */
+function createNetworkError(message, options) {
+  options.code = ENETWORK;
+  return createError(message || 'Network Error');
+}
+
+var CONTENT_TYPE$1 = 'Content-Type';
 
 function request(options) {
   var url = options.url;
@@ -255,7 +286,8 @@ function request(options) {
   }
 
   switch (method) {
-    // case 'HEAD':
+    case 'HEAD':
+    case 'DELETE':
     case 'GET':
       if (!params) {
         // 避免在发送get请求时，把data属性当作params
@@ -265,7 +297,7 @@ function request(options) {
       break;
     case 'POST':
       // 校验post数据格式
-      var ctype = headers[CONTENT_TYPE] || '';
+      var ctype = headers[CONTENT_TYPE$1] || '';
       if (isObject(data)) {
         if (!ctype.indexOf('application/json')) {
           data = JSON.stringify(data);
@@ -289,18 +321,7 @@ function request(options) {
 
   options.url = url;
 
-  return adapter(options).then(function (response) {
-    var options = response.options;
-    var data = response.data;
-    if (options.responseType === 'json' && isString(data)) {
-      try {
-        response.data = JSON.parse(data);
-      } catch (e) {
-        logErr('parse data error: ', e);
-      }
-    }
-    return response;
-  });
+  return adapter(options);
 }
 
 /**
@@ -328,14 +349,13 @@ var defaults = {
   }
 };
 
+function isString (value) {
+  return typeof value === 'string';
+}
+
 function isFunction (value) {
   return typeof value === 'function';
 }
-
-var CONTENT_TYPE$1 = 'Content-Type';
-var ECONNABORTED = 'ECONNABORTED';
-var ETIMEOUT = 'ETIMEOUT';
-var ENETWORK = 'ENETWORK';
 
 var managers = {};
 
@@ -344,22 +364,21 @@ function uuid() {
 }
 
 function buildError(anything) {
-  var options;
+  var options = {};
   if (!anything) {
     anything = 'Request aborted';
   } else if (isObject(anything)) {
     options = anything;
-    anything = anything.message;
+    anything = anything.message || '';
   }
-  return createError(anything || '', options);
+  options.code = ECONNRESET;
+  return createError(anything, options);
 }
 
 function abort(token, anything, ctx) {
   var fn = managers[token];
-  if (isFunction(fn)) {
-    fn(buildError(anything));
-    delete managers[token];
-  }
+  fn(buildError(anything));
+  delete managers[token];
   return ctx;
 }
 
@@ -377,10 +396,14 @@ function push(fn) {
   return token;
 }
 
-function clearAbortions(options) {
-  delete managers[options.abortedToken];
-  delete options.abortedToken;
-  delete options.abortedError;
+function isAborted(e) {
+  return e && e.code === ECONNRESET;
+}
+
+function clearAbortions(abortedToken) {
+  if (abortedToken) {
+    delete managers[abortedToken];
+  }
 }
 
 function xhr (options) {
@@ -396,21 +419,31 @@ function xhr (options) {
     var abortion = options.abortion;
     var xhrHooks = options.xhrHooks;
 
+    var abortedError;
+    var abortedToken;
+
+    // 异步请求对象
     var request = new window.XMLHttpRequest();
 
-    // 发送异步请求
+    var gc = function () {
+      abortedError = null;
+      abortedToken = null;
+      request = null;
+    };
+
+    // 建立连接
     request.open(method, url, async !== false);
 
     // 设置超时毫秒数
     request.timeout = timeout || 0;
 
     // 监听异步返回状态
-    request.onreadystatechange = function onreadystatechange() {
+    request.onreadystatechange = function () {
       if (!request || request.readyState !== 4) {
         return;
       }
 
-      clearAbortions(options);
+      clearAbortions(abortedToken);
 
       var status = request.status;
       var responseURL = request.responseURL;
@@ -434,64 +467,68 @@ function xhr (options) {
       xhrHooks.response.forEach(function (cb) { return cb(request, response, options); });
 
       if (options.validateStatus(status)) {
+        if (responseType === 'json' && isString(responseData)) {
+          try {
+            response.data = JSON.parse(responseData);
+          } catch (e) {
+            logErr('Parse data error: ', e);
+          }
+        }
         resolve(response);
       } else {
-        reject(createError(("Request failed with status code " + status), response));
+        reject(createStatusError(status, response));
       }
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     // 监听请求中断
-    request.onabort = function onabort() {
+    request.onabort = function () {
       if (!request) {
         return;
       }
-      reject(assign(options.abortedError, {
-        code: ECONNABORTED,
+      reject(assign(abortedError, {
         options: options,
         request: request
       }));
 
       // 垃圾回收
-      clearAbortions(options);
-      request = null;
+      clearAbortions(abortedToken);
+      gc();
     };
 
     // 主动中断请求
-    var token = options.abortedToken = push(function (error) {
-      options.abortedError = error;
+    abortedToken = push(function (error) {
+      abortedError = error;
       request && request.abort();
     });
     if (isFunction(abortion)) {
-      abortion(token);
+      abortion(abortedToken);
     }
 
     // 监听网络错误
-    request.onerror = function onerror() {
-      clearAbortions(options);
-      reject(createError('Network Error', {
-        code: ENETWORK,
+    request.onerror = function () {
+      clearAbortions(abortedToken);
+      reject(createNetworkError(null, {
         options: options,
         request: request
       }));
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     // 监听超时处理
-    request.ontimeout = function ontimeout() {
-      clearAbortions(options);
-      reject(createError(("timeout of " + timeout + "ms exceeded"), {
-        code: ETIMEOUT,
+    request.ontimeout = function () {
+      clearAbortions(abortedToken);
+      reject(createTimeoutError(timeout, {
         options: options,
         request: request
       }));
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     xhrHooks.request.forEach(function (cb) { return cb(options); });
@@ -500,7 +537,7 @@ function xhr (options) {
     var headers = options.headers;
     if (isFunction(request.setRequestHeader)) {
       forIn$1(headers, function (val, key) {
-        if (isNil(data) && key === CONTENT_TYPE$1) {
+        if (isNil(data) && key === CONTENT_TYPE) {
           // 如果data为空，就移除content-type
           delete headers[key];
         } else {
@@ -517,7 +554,7 @@ function xhr (options) {
     // 设置返回的数据类型，IE >= 10
     if (responseType) {
       try {
-        request.responseType = responseType;
+        request.responseType = responseType || '';
       } catch (e) {
         logErr('responseType error: ', e);
       }
@@ -540,7 +577,7 @@ function xhr (options) {
 var CONTENT_TYPES = {
   json: 'application/json; charset=UTF-8',
   form: 'application/x-www-form-urlencoded; charset=UTF-8',
-  multipart: 'multipart/form-data; charset=UTF-8'
+  'form-data': 'multipart/form-data; charset=UTF-8'
 };
 
 var DEFAULT_POST_HEADERS = {
@@ -627,7 +664,7 @@ Tammy.prototype.request = function request$1$1 (opts) {
   headers = opts.headers = mergeHeaders(headers, method);
   var ctype;
   if ((ctype = transformContentType(contentType))) {
-    headers[CONTENT_TYPE$1] = ctype;
+    headers[CONTENT_TYPE] = ctype;
   }
 
   var ref = this;
@@ -670,7 +707,7 @@ function createInstance(options) {
      */
     use: function use(fn) {
       if (!fn.installed) {
-        fn(tammy);
+        fn(tammy, $http);
         fn.installed = true;
       }
       return $http;
@@ -695,9 +732,7 @@ function createInstance(options) {
     /**
      * 是否是中断异常
      */
-    isAborted: function isAborted(e) {
-      return e && e.code === ECONNABORTED;
-    },
+    isAborted: isAborted,
 
     /**
      * 中断请求

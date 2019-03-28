@@ -1,8 +1,7 @@
 import isObject from 'celia/es/isObject';
 import Tammy from './lib/Tammy';
-import { ECONNABORTED } from './lib/constants';
 import { merge, assign } from './lib/util';
-import { abort, abortAll } from './lib/abort';
+import { abort, abortAll, isAborted } from './lib/abort';
 
 function createInstance(options) {
   const tammy = new Tammy(options);
@@ -30,7 +29,7 @@ function createInstance(options) {
      */
     use(fn) {
       if (!fn.installed) {
-        fn(tammy);
+        fn(tammy, $http);
         fn.installed = true;
       }
       return $http;
@@ -55,9 +54,7 @@ function createInstance(options) {
     /**
      * 是否是中断异常
      */
-    isAborted(e) {
-      return e && e.code === ECONNABORTED;
-    },
+    isAborted,
 
     /**
      * 中断请求

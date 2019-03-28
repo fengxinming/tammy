@@ -19,5 +19,5 @@ function configure(input, output) {
 
 module.exports = [
   configure('src/index.js', `dist/${DIST_FILENAME}.js`),
-  configure('src/all.js', `dist/${DIST_FILENAME}-all.js`)
+  configure('src/browser.js', `dist/${DIST_FILENAME}.browser.js`)
 ];

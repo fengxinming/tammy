@@ -1,14 +1,15 @@
 import forIn from 'celia/es/forIn';
 import isNil from 'celia/es/isNil';
+import isString from 'celia/es/isString';
 import isFunction from 'celia/es/isFunction';
-import { createError, logErr, assign } from './util';
-import { CONTENT_TYPE, ECONNABORTED, ETIMEOUT, ENETWORK } from './constants';
+import { logErr, assign, createNetworkError, createTimeoutError, createStatusError } from './util';
+import { CONTENT_TYPE } from './constants';
 import { push, managers } from './abort';
 
-function clearAbortions(options) {
-  delete managers[options.abortedToken];
-  delete options.abortedToken;
-  delete options.abortedError;
+function clearAbortions(abortedToken) {
+  if (abortedToken) {
+    delete managers[abortedToken];
+  }
 }
 
 export default function (options) {
@@ -26,21 +27,31 @@ export default function (options) {
       xhrHooks
     } = options;
 
+    let abortedError;
+    let abortedToken;
+
+    // 异步请求对象
     let request = new window.XMLHttpRequest();
 
-    // 发送异步请求
+    const gc = () => {
+      abortedError = null;
+      abortedToken = null;
+      request = null;
+    };
+
+    // 建立连接
     request.open(method, url, async !== false);
 
     // 设置超时毫秒数
     request.timeout = timeout || 0;
 
     // 监听异步返回状态
-    request.onreadystatechange = function onreadystatechange() {
+    request.onreadystatechange = function () {
       if (!request || request.readyState !== 4) {
         return;
       }
 
-      clearAbortions(options);
+      clearAbortions(abortedToken);
 
       const { status, responseURL, responseText } = request;
 
@@ -62,64 +73,68 @@ export default function (options) {
       xhrHooks.response.forEach(cb => cb(request, response, options));
 
       if (options.validateStatus(status)) {
+        if (responseType === 'json' && isString(responseData)) {
+          try {
+            response.data = JSON.parse(responseData);
+          } catch (e) {
+            logErr('Parse data error: ', e);
+          }
+        }
         resolve(response);
       } else {
-        reject(createError(`Request failed with status code ${status}`, response));
+        reject(createStatusError(status, response));
       }
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     // 监听请求中断
-    request.onabort = function onabort() {
+    request.onabort = function () {
       if (!request) {
         return;
       }
-      reject(assign(options.abortedError, {
-        code: ECONNABORTED,
+      reject(assign(abortedError, {
         options,
         request
       }));
 
       // 垃圾回收
-      clearAbortions(options);
-      request = null;
+      clearAbortions(abortedToken);
+      gc();
     };
 
     // 主动中断请求
-    const token = options.abortedToken = push((error) => {
-      options.abortedError = error;
+    abortedToken = push((error) => {
+      abortedError = error;
       request && request.abort();
     });
     if (isFunction(abortion)) {
-      abortion(token);
+      abortion(abortedToken);
     }
 
     // 监听网络错误
-    request.onerror = function onerror() {
-      clearAbortions(options);
-      reject(createError('Network Error', {
-        code: ENETWORK,
+    request.onerror = function () {
+      clearAbortions(abortedToken);
+      reject(createNetworkError(null, {
         options,
         request
       }));
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     // 监听超时处理
-    request.ontimeout = function ontimeout() {
-      clearAbortions(options);
-      reject(createError(`timeout of ${timeout}ms exceeded`, {
-        code: ETIMEOUT,
+    request.ontimeout = function () {
+      clearAbortions(abortedToken);
+      reject(createTimeoutError(timeout, {
         options,
         request
       }));
 
       // 垃圾回收
-      request = null;
+      gc();
     };
 
     xhrHooks.request.forEach(cb => cb(options));
@@ -145,7 +160,7 @@ export default function (options) {
     // 设置返回的数据类型，IE >= 10
     if (responseType) {
       try {
-        request.responseType = responseType;
+        request.responseType = responseType || '';
       } catch (e) {
         logErr('responseType error: ', e);
       }

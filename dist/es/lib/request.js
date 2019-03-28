@@ -1,9 +1,8 @@
 import isObject from 'celia/es/isObject';
-import isString from 'celia/es/isString';
 import stringify from 'celia/es/qs/stringify';
 import isAbsolute from 'celia/es/url/isAbsolute';
 import joinURLs from 'celia/es/url/join';
-import { toFormString, logErr, preloadHooks, joinQS, disableCache } from './util';
+import { toFormString, preloadHooks, joinQS, disableCache } from './util';
 
 const CONTENT_TYPE = 'Content-Type';
 
@@ -24,7 +23,8 @@ function request(options) {
   }
 
   switch (method) {
-    // case 'HEAD':
+    case 'HEAD':
+    case 'DELETE':
     case 'GET':
       if (!params) {
         // 避免在发送get请求时，把data属性当作params
@@ -58,17 +58,7 @@ function request(options) {
 
   options.url = url;
 
-  return adapter(options).then((response) => {
-    let { options, data } = response;
-    if (options.responseType === 'json' && isString(data)) {
-      try {
-        response.data = JSON.parse(data);
-      } catch (e) {
-        logErr('parse data error: ', e);
-      }
-    }
-    return response;
-  });
+  return adapter(options);
 }
 
 /**
