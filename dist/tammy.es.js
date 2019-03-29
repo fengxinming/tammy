@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.4
+ * tammy.js v1.0.0-beta.5
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -96,6 +96,21 @@ function forEach$1 (value, iterator, context) {
   return value && forEach(value, iterator, context);
 }
 
+function isFunction (value) {
+  return typeof value === 'function';
+}
+
+function forSlice$1 (value, start, end, iterator, context) {
+  if (value) {
+    if (isFunction(end)) {
+      context = iterator;
+      iterator = end;
+      end = value.length;
+    }
+    forSlice(value, start, end || value.length, iterator, context);
+  }
+}
+
 function append$1 (arr, obj) {
   if (arr) {
     append(arr, obj);
@@ -133,25 +148,32 @@ var assign = Object.assign || function (target) {
 };
 
 /**
+ * 深度合并
+ * @param {Object} srcObj
+ * @param {Object} destObj
+ */
+function deepMerge(srcObj, destObj) {
+  forIn$1(destObj, function (val, key) {
+    if (isObject(val)) {
+      var source = srcObj[key];
+      // 如果原对象对应的key值是对象，继续深度复制
+      source = isObject(source) ? source : {};
+      srcObj[key] = deepMerge(source, val);
+    } else {
+      srcObj[key] = val;
+    }
+  });
+  return srcObj;
+}
+
+/**
  * 合并对象
  * @param {Object} result
- * @param  {...Object} args
  */
-function merge(result) {
-  var args = [], len = arguments.length - 1;
-  while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
-
-  function cb(val, key) {
-    if (isObject(val)) {
-      var source = result[key];
-      source = isObject(source) ? source : {};
-      result[key] = merge(source, val);
-    } else {
-      result[key] = val;
-    }
-  }
-  forEach$1(args, function (arg) {
-    forIn$1(arg, cb);
+function deepAssign(result) {
+  var args = arguments;
+  forSlice$1(args, 1, function (arg) {
+    deepMerge(result, arg);
   });
   return result;
 }
@@ -271,25 +293,25 @@ var CONTENT_TYPE$1 = 'Content-Type';
 
 function request(options) {
   var url = options.url;
-  var cache = options.cache;
-  var baseURL = options.baseURL;
+  var baseUrl = options.baseUrl;
   var headers = options.headers;
   var method = options.method;
-  var params = options.params;
+  var qs = options.qs;
   var data = options.data;
+  var cache = options.cache;
   var adapter = options.adapter;
 
-  if (baseURL && !isAbsolute(url)) {
-    url = joinURLs(baseURL, url);
+  if (baseUrl && !isAbsolute(url)) {
+    url = joinURLs(baseUrl, url);
   }
 
   switch (method) {
     case 'HEAD':
     case 'DELETE':
     case 'GET':
-      if (!params) {
-        // 避免在发送get请求时，把data属性当作params
-        options.params = params = data;
+      if (!qs) {
+        // 避免在发送get请求时，把data属性当作querystring
+        options.qs = qs = data;
         options.data = data = undefined;
       }
       break;
@@ -307,13 +329,13 @@ function request(options) {
       break;
   }
 
-  if (params) {
-    if (isObject(params)) {
-      params = stringify(params);
+  if (qs) {
+    if (isObject(qs)) {
+      qs = stringify(qs);
     }
-    url = joinQS(url, params);
+    url = joinQS(url, qs);
   }
-  if (cache === false && ['HEAD', 'GET'].indexOf(method) > -1) {
+  if (cache === false && ['HEAD', 'DELETE', 'GET'].indexOf(method) > -1) {
     url = disableCache(url);
   }
 
@@ -341,7 +363,6 @@ var defaults = {
   responseType: 'json', // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
   xsrfCookieName: 'XSRF-TOKEN',
   xsrfHeaderName: 'X-XSRF-TOKEN',
-  maxContentLength: -1,
   validateStatus: function validateStatus(status) {
     return (status >= 200 && status < 300) || status === 304;
   }
@@ -351,10 +372,7 @@ function isString (value) {
   return typeof value === 'string';
 }
 
-function isFunction (value) {
-  return typeof value === 'function';
-}
-
+var MESSAGE = 'Request aborted';
 var managers = {};
 
 function uuid() {
@@ -364,10 +382,10 @@ function uuid() {
 function buildError(anything) {
   var options = {};
   if (!anything) {
-    anything = 'Request aborted';
+    anything = MESSAGE;
   } else if (isObject(anything)) {
     options = anything;
-    anything = anything.message || '';
+    anything = anything.message || MESSAGE;
   }
   options.code = ECONNRESET;
   return createError(anything, options);
@@ -642,7 +660,7 @@ var Tammy = function Tammy(options) {
     response: []
   };
   // 合并参数
-  this.defaults = merge({}, defaults, options);
+  this.defaults = deepAssign({}, defaults, options);
 };
 
 /**
@@ -752,7 +770,7 @@ function createInstance(options) {
 
   ['get', 'delete', 'head', 'options', 'post', 'put', 'patch'].forEach(function (method) {
     $http[method] = function (url, data, options) {
-      return $http(url, merge({ method: method, data: data }, options));
+      return $http(url, deepMerge({ method: method, data: data }, options));
     };
   });
 

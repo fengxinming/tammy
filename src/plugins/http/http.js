@@ -1,6 +1,6 @@
 import isFunction from 'celia/es/isFunction';
 import append from 'celia/es/array/append';
-import { push, managers } from '../lib/abort';
+import { push, managers } from '../../lib/abort';
 
 const { URL } = require('url');
 const http = require('http');
@@ -87,7 +87,7 @@ export default function (options) {
     const parsed = new URL(url);
     const protocol = parsed.protocol || 'http:';
     let isHttpsRequest = RHTTPS.test(protocol);
-    let agent = isHttpsRequest ? (httpsAgent || new https.Agent({ keepAlive: true })) : httpAgent;
+    let agent = isHttpsRequest ? (httpsAgent || new https.Agent()) : httpAgent;
 
     const httpOptions = {
       path: parsed.pathname + parsed.search,
@@ -144,7 +144,9 @@ export default function (options) {
         append(chunks, chunk);
       });
       res.on('end', () => {
+        // buffer
         let body = Buffer.concat(chunks, contentLength);
+
         if (error) {
           reject(Object.assign(error, {
             options,

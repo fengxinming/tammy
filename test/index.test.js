@@ -42,7 +42,7 @@ describe('测试 tammy', () => {
       });
 
     await tammy(url, {
-      params: {
+      qs: {
         aa: 'aa',
         bb: 'bb'
       }
@@ -56,7 +56,7 @@ describe('测试 tammy', () => {
     });
 
     await tammy(url, {
-      params: 'aa=aa&bb=bb',
+      qs: 'aa=aa&bb=bb',
       cache: false
     }).then(({ options }) => {
       expect(options.url.match(/[?&]_=[^&]*/g).length).toBe(1);
@@ -93,7 +93,7 @@ describe('测试 tammy', () => {
 
   it('测试创建新的实例', async () => {
     newTammy = tammy.create({
-      baseURL: url2
+      baseUrl: url2
     });
     await newTammy({
       url3,
@@ -211,6 +211,28 @@ describe('测试 tammy', () => {
 
     setTimeout(() => {
       tammy.abort(token);
+    }, 100);
+    try {
+      await tammy({
+        url,
+        abortion(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      });
+    } catch (e) {
+      expect(e.message).toBe('Request aborted');
+    }
+
+    await sleep(100);
+
+    setTimeout(() => {
+      tammy.abort(token, {});
     }, 100);
     try {
       await tammy({

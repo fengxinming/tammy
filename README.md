@@ -38,6 +38,8 @@
 npm install tammy --save
 ```
 
+#### Request for for Browsers
+
 ```javascript
 
 // es6
@@ -45,35 +47,29 @@ import tammy from 'tammy';
 // or
 import tammy from 'tammy/es';
 
-// modularity
+// optional modularity
 
-// use oauth plugin
-import oauth from 'tammy/es/oauth';
+// use auth plugin
+import auth from 'tammy/es/auth';
 // use xsrf plugin
 import xsrf from 'tammy/es/xsrf';
 // use res-headers plugin
 import resHeaders from 'tammy/es/res-headers';
 tammy
-  .use(oauth)
+  .use(auth)
   .use(xsrf)
   .use(resHeaders);
+
+```
+
+#### Request for for Node
+
+```javascript
 
 // node
 const tammy = require('tammy');
 
-// modularity
-
-// use oauth plugin
-const oauth = require('tammy/oauth.common');
-// use xsrf plugin
-const xsrf = require('tammy/xsrf.common');
-// use res-headers plugin
-const resHeaders = require('tammy/res-headers.common');
-
-tammy
-  .use(oauth)
-  .use(xsrf)
-  .use(resHeaders);
+tammy.use(require('tammy/http'));
 
 ```
 
@@ -102,19 +98,19 @@ tammy.get('/user?ID=12345')
 
 // Optionally the request above could also be done as
 tammy.get('/user', {
-    params: {
-      ID: 12345
-    }
-  })
-  .then(function (response) {
-    console.log(response);
-  })
-  .catch(function (error) {
-    console.log(error);
-  })
-  .then(function () {
-    // always executed
-  });  
+  qs: {
+    ID: 12345
+  }
+})
+.then(function (response) {
+  console.log(response);
+})
+.catch(function (error) {
+  console.log(error);
+})
+.then(function () {
+  // always executed
+});  
 
 // Want to use async/await? Add the `async` keyword to your outer function/method.
 async function getUser() {
@@ -150,7 +146,7 @@ Performing multiple concurrent requests
 ```js
 tammy.all([{
   url: '/user/12345',
-  params: {
+  qs: {
     num: 1
   }
 }, '/user/12345/permissions'])
@@ -159,11 +155,13 @@ tammy.all([{
   });
 ```
 
+---
+
 ## Tammy API
 
-Requests can be made by passing the relevant config to `tammy`.
+Requests can be made by passing the relevant options to `tammy`.
 
-##### tammy(config)
+##### tammy(options)
 
 ```js
 // Send a POST request
@@ -177,7 +175,7 @@ tammy({
 });
 ```
 
-##### tammy(url[, config])
+##### tammy(url[, options])
 
 ```js
 // Send a GET request (default method)
@@ -188,24 +186,24 @@ tammy('/user/12345');
 
 For convenience aliases have been provided for all supported request methods.
 
-##### tammy(config)
-##### tammy.get(url[, data[, config]])
-##### tammy.delete(url[, data[, config]])
-##### tammy.del(url[, data[, config]])
-##### tammy.head(url[, data[, config]])
-##### tammy.options(url[, data[, config]])
-##### tammy.post(url[, data[, config]])
-##### tammy.put(url[, data[, config]])
-##### tammy.patch(url[, data[, config]])
+##### tammy(options)
+##### tammy.get(url[, data[, options]])
+##### tammy.delete(url[, data[, options]])
+##### tammy.del(url[, data[, options]])
+##### tammy.head(url[, data[, options]])
+##### tammy.options(url[, data[, options]])
+##### tammy.post(url[, data[, options]])
+##### tammy.put(url[, data[, options]])
+##### tammy.patch(url[, data[, options]])
 
 ###### NOTE
-When using the alias methods `url`, `method`, and `data` properties don't need to be specified in config.
+When using the alias methods `url`, `method`, and `data` properties don't need to be specified in options.
 
 ### Creating an instance
 
-You can create a new instance of tammy with a custom config.
+You can create a new instance of tammy with a custom options.
 
-##### tammy.create([config])
+##### tammy.create([options])
 
 ```js
 const instance = tammy.create({
@@ -217,122 +215,123 @@ const instance = tammy.create({
 
 ### Instance methods
 
-The available instance methods are listed below. The specified config will be merged with the instance config.
+The available instance methods are listed below. The specified options will be merged with the instance options.
 
-##### tammy(config)
-##### tammy.get(url[, data[, config]])
-##### tammy.delete(url[, data[, config]])
-##### tammy.del(url[, data[, config]])
-##### tammy.head(url[, data[, config]])
-##### tammy.options(url[, data[, config]])
-##### tammy.post(url[, data[, config]])
-##### tammy.put(url[, data[, config]])
-##### tammy.patch(url[, data[, config]])
+##### instance(options)
+##### instance.get(url[, data[, options]])
+##### instance.delete(url[, data[, options]])
+##### instance.del(url[, data[, options]])
+##### instance.head(url[, data[, options]])
+##### instance.options(url[, data[, options]])
+##### instance.post(url[, data[, options]])
+##### instance.put(url[, data[, options]])
+##### instance.patch(url[, data[, options]])
+
+---
 
 ## Request Options
 
 These are the available options for making requests. Only the `url` is required. Requests will default to `GET` if `method` is not specified.
 
-```js
+- `url` - the server url will be used for the request.
+- `baseUrl` - fully qualified uri string used as the base url, for example when you want to do many requests to the same domain. If `baseUrl` is `https://example.com/api/`, then requesting `/end/point?test=true` will fetch `https://example.com/api/end/point?test=true`. When `baseUrl` is given, `uri` must also be a string.
+- `method` - the request method can be used when making the request (default: `"GET"`).
+- `headers` - custom headers can be sent (default: `{'Accept': 'application/json, text/plain, */*'}`).
+
+```javascript
 {
-  // `url` is the server URL that will be used for the request
-  url: '/user',
+  headers: {'X-Requested-With': 'XMLHttpRequest'}
+}
+```
 
-  // `method` is the request method to be used when making the request
-  method: 'get', // default
+- `qs` - the url parameters can be sent with the request that is a plain object or query string.
+- `data` - the data can be sent as the request body(object、json string or form string), and it is also compatible with `qs` when `qs` is null.
+- `cache` - set `false` that `url` will be appended timestamp if `method` is `HEAD` `DELETE` or `GET`
+- `timeout` - integer containing number of milliseconds, controls two timeouts (default: `0` no timeout).
+  - **Read timeout**: Time to wait for a server to send response headers (and start the response body) before aborting the request.
+  - **Connection timeout**: Sets the socket to timeout after `timeout` milliseconds of inactivity. Note that increasing the timeout beyond the OS-wide TCP connection timeout will not have any effect ([the default in Linux can be anywhere from 20-120 seconds][linux-timeout])
 
-  // `baseURL` will be prepended to `url` unless `url` is absolute.
-  // It can be convenient to set `baseURL` for an instance of tammy to pass relative URLs
-  // to methods of that instance.
-  baseURL: 'https://some-domain.com/api/',
+[linux-timeout]: http://www.sekuda.com/overriding_the_default_linux_kernel_20_second_tcp_socket_connect_timeout
+- `adapter` - allows custom handling of requests which makes testing easier. Return a promise and supply a valid response (see https://github.com/fengxinming/tammy/blob/master/src/lib/xhr.js).
 
-  // `headers` are custom headers to be sent
-  headers: {'X-Requested-With': 'XMLHttpRequest'},
-
-  // `params` are the URL parameters to be sent with the request
-  // It can be a plain object or query string
-  params: {
-    ID: 12345
-  },
-
-  // `data` is the data to be sent as the request body
-  // `data` is compatible with `params` when `params` is null
-  data: {
-    firstName: 'Fred'
-  },
-
-  // `timeout` specifies the number of milliseconds before the request times out.
-  // If the request takes longer than `timeout`, the request will be aborted.
-  timeout: 1000, // default is `0` (no timeout)
-
-  // `withCredentials` indicates whether or not cross-site Access-Control requests
-  // should be made using credentials
-  withCredentials: false, // default
-
-  // `adapter` allows custom handling of requests which makes testing easier.
-  // Return a promise and supply a valid response (see https://github.com/fengxinming/tammy/blob/master/src/lib/xhr.js).
-  adapter: function (config) {
+```javascript
+{
+  adapter: function (options) {
     /* ... */
-  },
+  }
+}
+```
 
-  // `auth` indicates that HTTP Basic auth should be used, and supplies credentials.
-  // This will set an `Authorization` header, overwriting any existing
-  // `Authorization` custom headers you have set using `headers`.
+- `validateStatus` - defines whether to resolve or reject the promise for a given HTTP response status code. If `validateStatus` returns `true` (or is set to `null` or `undefined`), the promise will be resolved; otherwise, the promise will be rejected (default: `(status >= 200 && status < 300) || status === 304`.
+
+```javascript
+{
+  validateStatus: function (status) {
+    return (status >= 200 && status < 300) || status === 304; // default
+  }
+}
+```
+
+- `abortion` - specifies a abortion token that can be used to abort the request (see Abortion section below for details)
+
+```javascript
+let abortionToken;
+// ...
+
+{
+  abortion: function(token) {
+    abortionToken = token;
+  }
+}
+```
+
+- `responseType` - indicates the type of data that the server will respond with options are 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream' (default: `"json"`).
+
+---
+
+- `withCredentials` - indicates whether or not cross-site Access-Control requests (default: `false`).
+- `auth` - indicates that HTTP Basic auth should be used, and supplies credentials. This will set an `Authorization` header, overwriting any existing `Authorization` custom headers you have set using `headers`. before setting `auth` you must preload `auth plugin` (see Installation section below for details)
+
+```javascript
+{
   auth: {
     username: 'janedoe',
     password: 's00pers3cret'
-  },
-
-  // `responseType` indicates the type of data that the server will respond with
-  // options are 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
-  responseType: 'json', // default
-
-  // `xsrfCookieName` is the name of the cookie to use as a value for xsrf token
-  xsrfCookieName: 'XSRF-TOKEN', // default
-
-  // `xsrfHeaderName` is the name of the http header that carries the xsrf token value
-  xsrfHeaderName: 'X-XSRF-TOKEN', // default
-
-  // `onUploadProgress` allows handling of progress events for uploads
-  onUploadProgress: function (progressEvent) {
-    // Do whatever you want with the native progress event
-  },
-
-  // `onDownloadProgress` allows handling of progress events for downloads
-  onDownloadProgress: function (progressEvent) {
-    // Do whatever you want with the native progress event
-  },
-
-  // `maxContentLength` defines the max size of the http response content in bytes allowed
-  maxContentLength: 2000,
-
-  // `validateStatus` defines whether to resolve or reject the promise for a given
-  // HTTP response status code. If `validateStatus` returns `true` (or is set to `null`
-  // or `undefined`), the promise will be resolved; otherwise, the promise will be
-  // rejected.
-  validateStatus: function (status) {
-    return (status >= 200 && status < 300) || status === 304; // default
-  },
-
-  // `abortion` specifies a abortion token that can be used to abort the request
-  // (see Abortion section below for details)
-  abortion: function(token) {
-    t = token;
-  },
-
-  // `getAllResponseHeaders` defines the response header that can be parsed
-  getAllResponseHeaders: true,
-
-  // avoid to get cache data
-  cache: false
+  }
 }
 ```
+
+- `xsrfCookieName` the name of the cookie use as a value for xsrf token (default: `"XSRF-TOKEN"`).
+- `xsrfHeaderName` the name of the http header that carries the xsrf token value (default: `"X-XSRF-TOKEN"`).
+- `onUploadProgress` - allows handling of progress events for uploads.
+
+```javascript
+{
+  onUploadProgress: function (progressEvent) {
+    // Do whatever you want with the native progress event
+  }
+}
+```  
+
+- `onDownloadProgress` - allows handling of progress events for downloads.
+
+```javascript
+{
+  onDownloadProgress: function (progressEvent) {
+    // Do whatever you want with the native progress event
+  }
+}
+```
+
+- `getAllResponseHeaders` defines the response header that can be parsed if it is `true`. before setting `getAllResponseHeaders ` you must preload `res-headers  plugin` (see Installation section below for details)
+
+---
 
 ## Response Schema
 
 The response for a request contains the following information.
 
-```js
+```javascript
 {
   // `data` is the response that was provided by the server
   data: {},

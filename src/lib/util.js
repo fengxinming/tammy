@@ -2,6 +2,7 @@ import isNil from 'celia/es/isNil';
 import isObject from 'celia/es/isObject';
 import forIn from 'celia/es/forIn';
 import forEach from 'celia/es/forEach';
+import forSlice from 'celia/es/forSlice';
 import append from 'celia/es/array/append';
 import removeAt from 'celia/es/array/removeAt';
 
@@ -27,22 +28,32 @@ export const assign = Object.assign || function (target) {
 };
 
 /**
+ * 深度合并
+ * @param {Object} srcObj
+ * @param {Object} destObj
+ */
+export function deepMerge(srcObj, destObj) {
+  forIn(destObj, (val, key) => {
+    if (isObject(val)) {
+      let source = srcObj[key];
+      // 如果原对象对应的key值是对象，继续深度复制
+      source = isObject(source) ? source : {};
+      srcObj[key] = deepMerge(source, val);
+    } else {
+      srcObj[key] = val;
+    }
+  });
+  return srcObj;
+}
+
+/**
  * 合并对象
  * @param {Object} result
- * @param  {...Object} args
  */
-export function merge(result, ...args) {
-  function cb(val, key) {
-    if (isObject(val)) {
-      let source = result[key];
-      source = isObject(source) ? source : {};
-      result[key] = merge(source, val);
-    } else {
-      result[key] = val;
-    }
-  }
-  forEach(args, (arg) => {
-    forIn(arg, cb);
+export function deepAssign(result) {
+  const args = arguments;
+  forSlice(args, 1, (arg) => {
+    deepMerge(result, arg);
   });
   return result;
 }

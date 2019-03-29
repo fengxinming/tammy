@@ -1,6 +1,6 @@
 import isObject from 'celia/es/isObject';
 import Tammy from './lib/Tammy';
-import { merge, assign } from './lib/util';
+import { deepMerge, assign } from './lib/util';
 import { abort, abortAll, isAborted } from './lib/abort';
 
 function createInstance(options) {
@@ -76,7 +76,7 @@ function createInstance(options) {
 
   ['get', 'delete', 'head', 'options', 'post', 'put', 'patch'].forEach((method) => {
     $http[method] = function (url, data, options) {
-      return $http(url, merge({ method, data }, options));
+      return $http(url, deepMerge({ method, data }, options));
     };
   });
 

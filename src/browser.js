@@ -1,13 +1,13 @@
 import tammy from './index';
-import oauth from './oauth';
-import xsrf from './xsrf';
-import resHeaders from './res-headers';
+import auth from './plugins/auth';
+import xsrf from './plugins/xsrf';
+import resHeaders from './plugins/res-headers';
 
 tammy
-  .use(oauth)
+  .use(auth)
   .use(xsrf)
   .use(resHeaders);
 
-tammy.plugins = { oauth, xsrf, resHeaders };
+tammy.plugins = { auth, xsrf, resHeaders };
 
 export default tammy;

@@ -3,6 +3,7 @@ import { createError } from './util';
 import forIn from 'celia/es/forIn';
 import { ECONNRESET } from './constants';
 
+const MESSAGE = 'Request aborted';
 export const managers = {};
 
 function uuid() {
@@ -12,10 +13,10 @@ function uuid() {
 function buildError(anything) {
   let options = {};
   if (!anything) {
-    anything = 'Request aborted';
+    anything = MESSAGE;
   } else if (isObject(anything)) {
     options = anything;
-    anything = anything.message || '';
+    anything = anything.message || MESSAGE;
   }
   options.code = ECONNRESET;
   return createError(anything, options);

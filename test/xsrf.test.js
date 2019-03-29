@@ -1,5 +1,5 @@
 import tammy from '../src/index';
-import xsrf from '../src/xsrf';
+import xsrf from '../src/plugins/xsrf';
 import { makeXHR } from './util';
 
 describe('测试 xsrf', () => {

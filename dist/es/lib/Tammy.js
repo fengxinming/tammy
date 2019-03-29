@@ -1,5 +1,5 @@
 import request from './request';
-import { merge, assign, interceptor } from './util';
+import { deepAssign, assign, interceptor } from './util';
 import defaults from './defaults';
 import xhr from './xhr';
 import { CONTENT_TYPE } from './constants';
@@ -22,7 +22,7 @@ export default class Tammy {
       response: []
     };
     // 合并参数
-    this.defaults = merge({}, defaults, options);
+    this.defaults = deepAssign({}, defaults, options);
   }
 
   /**

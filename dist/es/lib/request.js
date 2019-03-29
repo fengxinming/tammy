@@ -9,26 +9,26 @@ const CONTENT_TYPE = 'Content-Type';
 function request(options) {
   let {
     url,
-    cache,
-    baseURL,
+    baseUrl,
     headers,
     method,
-    params,
+    qs,
     data,
+    cache,
     adapter
   } = options;
 
-  if (baseURL && !isAbsolute(url)) {
-    url = joinURLs(baseURL, url);
+  if (baseUrl && !isAbsolute(url)) {
+    url = joinURLs(baseUrl, url);
   }
 
   switch (method) {
     case 'HEAD':
     case 'DELETE':
     case 'GET':
-      if (!params) {
-        // 避免在发送get请求时，把data属性当作params
-        options.params = params = data;
+      if (!qs) {
+        // 避免在发送get请求时，把data属性当作querystring
+        options.qs = qs = data;
         options.data = data = undefined;
       }
       break;
@@ -46,13 +46,13 @@ function request(options) {
       break;
   }
 
-  if (params) {
-    if (isObject(params)) {
-      params = stringify(params);
+  if (qs) {
+    if (isObject(qs)) {
+      qs = stringify(qs);
     }
-    url = joinQS(url, params);
+    url = joinQS(url, qs);
   }
-  if (cache === false && ['HEAD', 'GET'].indexOf(method) > -1) {
+  if (cache === false && ['HEAD', 'DELETE', 'GET'].indexOf(method) > -1) {
     url = disableCache(url);
   }
 

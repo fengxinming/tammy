@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.4
+ * tammy.js v1.0.0-beta.5
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -109,7 +109,7 @@ function http$1 (options) {
     var parsed = new URL(url);
     var protocol = parsed.protocol || 'http:';
     var isHttpsRequest = RHTTPS.test(protocol);
-    var agent = isHttpsRequest ? (httpsAgent || new https.Agent({ keepAlive: true })) : httpAgent;
+    var agent = isHttpsRequest ? (httpsAgent || new https.Agent()) : httpAgent;
 
     var httpOptions = {
       path: parsed.pathname + parsed.search,
@@ -166,7 +166,9 @@ function http$1 (options) {
         append$1(chunks, chunk);
       });
       res.on('end', function () {
+        // buffer
         var body = Buffer.concat(chunks, contentLength);
+
         if (error) {
           reject(Object.assign(error, {
             options: options,
@@ -232,10 +234,19 @@ function http$1 (options) {
   });
 }
 
+var toString = Object.prototype.toString;
+
+function isStandardNodeEnv() {
+  return process && toString.call(process) === '[object process]';
+}
+
 function plugin(ref) {
   var defaults = ref.defaults;
 
-  defaults.adapter = http$1;
+  if (isStandardNodeEnv()) {
+    // For node use HTTP adapter
+    defaults.adapter = http$1;
+  }
 }
 
 plugin.request = http$1;

@@ -1,5 +1,5 @@
 import tammy from '../src/index';
-import oauth from '../src/oauth';
+import auth from '../src/plugins/auth';
 import { makeXHR } from './util';
 
 describe('测试 oauth', () => {
@@ -17,10 +17,10 @@ describe('测试 oauth', () => {
   });
 
   it('测试oauth认证', async () => {
-    tammy.use(oauth);
+    tammy.use(auth);
 
     // 防重复加载
-    tammy.use(oauth);
+    tammy.use(auth);
 
     await tammy({
       method: 'POST',

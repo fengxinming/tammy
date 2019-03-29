@@ -25,9 +25,7 @@ const banner = exports.banner =
 
 const resolve = exports.resolve = p => path.resolve(__dirname, '..', p);
 
-exports.sourceDir = fs
-  .readdirSync(resolve('src'))
-  .filter(file => file !== 'lib' && file.lastIndexOf('.js') === -1);
+exports.sourceDir = fs.readdirSync(resolve('src/plugins'));
 
 exports.genConfig = function (name, opts) {
   const {

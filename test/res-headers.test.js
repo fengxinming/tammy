@@ -1,5 +1,5 @@
 import tammy from '../src/index';
-import resHeaders from '../src/res-headers';
+import resHeaders from '../src/plugins/res-headers';
 import { makeXHR } from './util';
 
 describe('测试 oauth', () => {
