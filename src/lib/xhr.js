@@ -23,8 +23,7 @@ export default function (options) {
       responseType,
       onDownloadProgress,
       onUploadProgress,
-      abortion,
-      xhrHooks
+      abortion
     } = options;
 
     let abortedError;
@@ -69,8 +68,6 @@ export default function (options) {
         request,
         status
       };
-
-      xhrHooks.response.forEach(cb => cb(request, response, options));
 
       if (options.validateStatus(status)) {
         if (responseType === 'json' && isString(responseData)) {
@@ -136,8 +133,6 @@ export default function (options) {
       // 垃圾回收
       gc();
     };
-
-    xhrHooks.request.forEach(cb => cb(options));
 
     // 增加 headers
     const { headers } = options;

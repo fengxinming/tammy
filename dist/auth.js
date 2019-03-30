@@ -6,19 +6,21 @@
 'use strict';
 
 function index (ref) {
-  var xhrHooks = ref.xhrHooks;
+  var internalHooks = ref.internalHooks;
 
-  xhrHooks.request.push(function (ref) {
-    var auth = ref.auth;
-    var headers = ref.headers;
-
-    // HTTP basic authentication
-    if (auth) {
-      var username = auth.username || '';
-      var password = auth.password || '';
-      headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
-    }
-  });
+  if (window && window.window === window) {
+    internalHooks.request.use(function (options) {
+      // HTTP basic authentication
+      var auth = options.auth;
+      var headers = options.headers;
+      if (auth) {
+        var username = auth.username || '';
+        var password = auth.password || '';
+        headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
+      }
+      return options;
+    });
+  }
 }
 
 module.exports = index;

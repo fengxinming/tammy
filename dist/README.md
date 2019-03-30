@@ -16,6 +16,7 @@
   - [Interceptors](#Interceptors)
   - [Handling Errors](#Handling-Errors)
   - [Abortion](#Abortion)
+  - [Plugin](#Plugin)
   - [License](#License)
 
 ---
@@ -207,7 +208,7 @@ You can create a new instance of tammy with a custom options.
 
 ```js
 const instance = tammy.create({
-  baseURL: 'https://some-domain.com/api/',
+  baseUrl: 'https://some-domain.com/api/',
   timeout: 1000,
   headers: {'X-Custom-Header': 'foobar'}
 });
@@ -379,7 +380,7 @@ You can specify config defaults that will be applied to every request.
 
 ```js
 tammy.use(({ defaults, setHeader }) => {
-  defaults.baseURL = 'https://api.example.com';
+  defaults.baseUrl = 'https://api.example.com';
   setHeader('Authorization', AUTH_TOKEN);
   setHeader('Content-Type', 'application/x-www-form-urlencoded', 'POST');
 });
@@ -390,7 +391,7 @@ tammy.use(({ defaults, setHeader }) => {
 ```js
 // Set config defaults when creating the instance
 const instance = tammy.create({
-  baseURL: 'https://api.example.com'
+  baseUrl: 'https://api.example.com'
 });
 
 // Alter defaults after instance has been created
@@ -545,9 +546,12 @@ tammy.abortAll();
 
 > Note: you can abort several requests.
 
-## Using application/x-www-form-urlencoded format
+## Plugin
 
-By default, tammy serializes JavaScript objects to `JSON`. To send data in the `application/x-www-form-urlencoded` format instead, you can use one of the following options.
+- [auth](https://github.com/fengxinming/tammy/tree/master/src/plugins/auth)
+- [http](https://github.com/fengxinming/tammy/tree/master/src/plugins/http)
+- [res-headers](https://github.com/fengxinming/tammy/tree/master/src/plugins/res-headers)
+- [xsrf](https://github.com/fengxinming/tammy/tree/master/src/plugins/xsrf)
 
 ## License
 

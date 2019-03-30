@@ -37,7 +37,6 @@ function getAllBuilds() {
   return mods;
 };
 
-
 /**
  * 编译所有的js
  * @param {Array} builds 配置数组
@@ -60,9 +59,10 @@ async function build(builds) {
     }
   }
   console.log('-', DIST_FILENAME);
+  console.log('-', 'plugins');
   sourceDir
     .forEach((dir) => {
-      console.log('-', dir);
+      console.log('  -', dir);
     });
 }
 

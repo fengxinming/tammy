@@ -16,10 +16,10 @@ export default class Tammy {
       request: interceptor([]),
       response: interceptor([])
     };
-    // xhr钩子函数
-    this.xhrHooks = {
-      request: [],
-      response: []
+    // 内部钩子函数, 用于扩展插件
+    this.internalHooks = {
+      request: interceptor([]),
+      response: interceptor([])
     };
     // 合并参数
     this.defaults = deepAssign({}, defaults, options);
@@ -43,9 +43,7 @@ export default class Tammy {
       headers[CONTENT_TYPE] = ctype;
     }
 
-    const { xhrHooks } = this;
-    opts.xhrHooks = xhrHooks;
-    return request(opts, xhrHooks.request, xhrHooks.response);
+    return request(opts, this.internalHooks, this.interceptors);
   }
 
 }

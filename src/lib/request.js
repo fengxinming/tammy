@@ -64,13 +64,17 @@ function request(options) {
 /**
  * http请求
  * @param {Object} opts
+ * @param {Array} internalHooks
+ * @param {Array} interceptors
  */
-export default function (opts, reqHooks, resHooks) {
-  let promise = Promise.resolve(opts);
+export default function (opts, internalHooks, interceptors) {
   // 优先挂在全局钩子
-  promise = preloadHooks(
-    preloadHooks(promise, reqHooks).then(request),
-    resHooks
+  return preloadHooks(
+    Promise.resolve(opts),
+    interceptors.request,
+    internalHooks.request,
+    [request],
+    internalHooks.response,
+    interceptors.response
   );
-  return promise;
 }

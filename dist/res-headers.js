@@ -16,15 +16,19 @@ function parseRawHeaders(rawHeaders) {
 }
 
 function index (ref) {
-  var xhrHooks = ref.xhrHooks;
+  var internalHooks = ref.internalHooks;
 
-  xhrHooks.response.push(function (xhr, res, ref) {
-    var getAllResponseHeaders = ref.getAllResponseHeaders;
-
-    if (getAllResponseHeaders && xhr.getAllResponseHeaders) {
-      res.headers = parseRawHeaders(xhr.getAllResponseHeaders());
-    }
-  });
+  if (window && window.XMLHttpRequest) {
+    internalHooks.response.use(function (response) {
+      var request = response.request;
+      var options = response.options;
+      var getAllResponseHeaders = options.getAllResponseHeaders;
+      if (getAllResponseHeaders && request.getAllResponseHeaders) {
+        response.headers = parseRawHeaders(request.getAllResponseHeaders());
+      }
+      return response;
+    });
+  }
 }
 
 module.exports = index;

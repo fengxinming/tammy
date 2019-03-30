@@ -114,27 +114,31 @@ if (isStandardBrowserEnv) {
 }
 
 function index (ref) {
-  var xhrHooks = ref.xhrHooks;
+  var internalHooks = ref.internalHooks;
 
-  xhrHooks.request.push(function (ref) {
-    var url = ref.url;
-    var withCredentials = ref.withCredentials;
-    var xsrfHeaderName = ref.xsrfHeaderName;
-    var xsrfCookieName = ref.xsrfCookieName;
-    var headers = ref.headers;
+  if (window && window.window === window) {
+    internalHooks.request.use(function (options) {
+      var url = options.url;
+      var headers = options.headers;
+      var withCredentials = options.withCredentials;
+      var xsrfCookieName = options.xsrfCookieName; if ( xsrfCookieName === void 0 ) xsrfCookieName = 'XSRF-TOKEN';
+      var xsrfHeaderName = options.xsrfHeaderName; if ( xsrfHeaderName === void 0 ) xsrfHeaderName = 'X-XSRF-TOKEN';
 
-    // 判断是浏览器环境
-    if (isStandardBrowserEnv()) {
-      // 增加 xsrf header
-      var xsrfValue = (withCredentials || isURLSameOrigin(url)) && xsrfCookieName ?
-        cookies.get(xsrfCookieName) :
-        undefined;
+      // 判断是浏览器环境
+      if (isStandardBrowserEnv()) {
+        // 增加 xsrf header
+        var xsrfValue = (withCredentials || isURLSameOrigin(url)) && xsrfCookieName ?
+          cookies.get(xsrfCookieName) :
+          undefined;
 
-      if (xsrfValue) {
-        headers[xsrfHeaderName] = xsrfValue;
+        if (xsrfValue) {
+          headers[xsrfHeaderName] = xsrfValue;
+        }
       }
-    }
-  });
+
+      return options;
+    });
+  }
 }
 
 module.exports = index;

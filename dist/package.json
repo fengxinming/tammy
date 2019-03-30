@@ -18,9 +18,10 @@
   "keywords": [
     "xhr",
     "XMLHttpRequest",
-    "fetch",
-    "http",
     "ajax",
+    "fetch",
+    "axios",
+    "http",
     "promise",
     "node"
   ],

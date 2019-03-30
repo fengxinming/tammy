@@ -204,14 +204,13 @@ function toFormString(obj) {
 /**
  * 挂在hooks
  * @param {Promise} promise
- * @param {Array} hooks
  */
-function preloadHooks(promise, hooks) {
-  hooks.forEach(function (ref) {
-    var fulfilled = ref.fulfilled;
-    var rejected = ref.rejected;
-
-    promise = promise.then(fulfilled, rejected);
+function preloadHooks(promise) {
+  var args = arguments;
+  forSlice$1(args, 1, function (hooks) {
+    hooks.forEach(function (hook) {
+      promise = isObject(hook) ? promise.then(hook.fulfilled, hook.rejected) : promise.then(hook);
+    });
   });
   return promise;
 }
@@ -222,7 +221,7 @@ function preloadHooks(promise, hooks) {
  * @param {String} qs
  */
 function joinQS(url, qs) {
-  return url + (url.indexOf('?') > -1 ? '?' : '&') + qs;
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
 }
 
 var RCACHE = /([?&]_=)[^&]*/;
@@ -347,22 +346,24 @@ function request(options) {
 /**
  * http请求
  * @param {Object} opts
+ * @param {Array} internalHooks
+ * @param {Array} interceptors
  */
-function request$1 (opts, reqHooks, resHooks) {
-  var promise = Promise.resolve(opts);
+function request$1 (opts, internalHooks, interceptors) {
   // 优先挂在全局钩子
-  promise = preloadHooks(
-    preloadHooks(promise, reqHooks).then(request),
-    resHooks
+  return preloadHooks(
+    Promise.resolve(opts),
+    interceptors.request,
+    internalHooks.request,
+    [request],
+    internalHooks.response,
+    interceptors.response
   );
-  return promise;
 }
 
 var defaults = {
   timeout: 0,
   responseType: 'json', // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
   validateStatus: function validateStatus(status) {
     return (status >= 200 && status < 300) || status === 304;
   }
@@ -433,7 +434,6 @@ function xhr (options) {
     var onDownloadProgress = options.onDownloadProgress;
     var onUploadProgress = options.onUploadProgress;
     var abortion = options.abortion;
-    var xhrHooks = options.xhrHooks;
 
     var abortedError;
     var abortedToken;
@@ -479,8 +479,6 @@ function xhr (options) {
         request: request,
         status: status
       };
-
-      xhrHooks.response.forEach(function (cb) { return cb(request, response, options); });
 
       if (options.validateStatus(status)) {
         if (responseType === 'json' && isString(responseData)) {
@@ -546,8 +544,6 @@ function xhr (options) {
       // 垃圾回收
       gc();
     };
-
-    xhrHooks.request.forEach(function (cb) { return cb(options); });
 
     // 增加 headers
     var headers = options.headers;
@@ -654,10 +650,10 @@ var Tammy = function Tammy(options) {
     request: interceptor([]),
     response: interceptor([])
   };
-  // xhr钩子函数
-  this.xhrHooks = {
-    request: [],
-    response: []
+  // 内部钩子函数, 用于扩展插件
+  this.internalHooks = {
+    request: interceptor([]),
+    response: interceptor([])
   };
   // 合并参数
   this.defaults = deepAssign({}, defaults, options);
@@ -683,10 +679,7 @@ Tammy.prototype.request = function request$1$1 (opts) {
     headers[CONTENT_TYPE] = ctype;
   }
 
-  var ref = this;
-    var xhrHooks = ref.xhrHooks;
-  opts.xhrHooks = xhrHooks;
-  return request$1(opts, xhrHooks.request, xhrHooks.response);
+  return request$1(opts, this.internalHooks, this.interceptors);
 };
 
 /**

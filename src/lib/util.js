@@ -98,11 +98,13 @@ export function toFormString(obj) {
 /**
  * 挂在hooks
  * @param {Promise} promise
- * @param {Array} hooks
  */
-export function preloadHooks(promise, hooks) {
-  hooks.forEach(({ fulfilled, rejected }) => {
-    promise = promise.then(fulfilled, rejected);
+export function preloadHooks(promise) {
+  const args = arguments;
+  forSlice(args, 1, (hooks) => {
+    hooks.forEach((hook) => {
+      promise = isObject(hook) ? promise.then(hook.fulfilled, hook.rejected) : promise.then(hook);
+    });
   });
   return promise;
 }
@@ -113,7 +115,7 @@ export function preloadHooks(promise, hooks) {
  * @param {String} qs
  */
 export function joinQS(url, qs) {
-  return url + (url.indexOf('?') > -1 ? '?' : '&') + qs;
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
 }
 
 const RCACHE = /([?&]_=)[^&]*/;

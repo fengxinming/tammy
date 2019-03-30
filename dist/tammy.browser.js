@@ -210,14 +210,13 @@
   /**
    * 挂在hooks
    * @param {Promise} promise
-   * @param {Array} hooks
    */
-  function preloadHooks(promise, hooks) {
-    hooks.forEach(function (ref) {
-      var fulfilled = ref.fulfilled;
-      var rejected = ref.rejected;
-
-      promise = promise.then(fulfilled, rejected);
+  function preloadHooks(promise) {
+    var args = arguments;
+    forSlice$1(args, 1, function (hooks) {
+      hooks.forEach(function (hook) {
+        promise = isObject(hook) ? promise.then(hook.fulfilled, hook.rejected) : promise.then(hook);
+      });
     });
     return promise;
   }
@@ -228,7 +227,7 @@
    * @param {String} qs
    */
   function joinQS(url, qs) {
-    return url + (url.indexOf('?') > -1 ? '?' : '&') + qs;
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
   }
 
   var RCACHE = /([?&]_=)[^&]*/;
@@ -353,22 +352,24 @@
   /**
    * http请求
    * @param {Object} opts
+   * @param {Array} internalHooks
+   * @param {Array} interceptors
    */
-  function request$1 (opts, reqHooks, resHooks) {
-    var promise = Promise.resolve(opts);
+  function request$1 (opts, internalHooks, interceptors) {
     // 优先挂在全局钩子
-    promise = preloadHooks(
-      preloadHooks(promise, reqHooks).then(request),
-      resHooks
+    return preloadHooks(
+      Promise.resolve(opts),
+      interceptors.request,
+      internalHooks.request,
+      [request],
+      internalHooks.response,
+      interceptors.response
     );
-    return promise;
   }
 
   var defaults = {
     timeout: 0,
     responseType: 'json', // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
-    xsrfCookieName: 'XSRF-TOKEN',
-    xsrfHeaderName: 'X-XSRF-TOKEN',
     validateStatus: function validateStatus(status) {
       return (status >= 200 && status < 300) || status === 304;
     }
@@ -439,7 +440,6 @@
       var onDownloadProgress = options.onDownloadProgress;
       var onUploadProgress = options.onUploadProgress;
       var abortion = options.abortion;
-      var xhrHooks = options.xhrHooks;
 
       var abortedError;
       var abortedToken;
@@ -485,8 +485,6 @@
           request: request,
           status: status
         };
-
-        xhrHooks.response.forEach(function (cb) { return cb(request, response, options); });
 
         if (options.validateStatus(status)) {
           if (responseType === 'json' && isString(responseData)) {
@@ -552,8 +550,6 @@
         // 垃圾回收
         gc();
       };
-
-      xhrHooks.request.forEach(function (cb) { return cb(options); });
 
       // 增加 headers
       var headers = options.headers;
@@ -660,10 +656,10 @@
       request: interceptor([]),
       response: interceptor([])
     };
-    // xhr钩子函数
-    this.xhrHooks = {
-      request: [],
-      response: []
+    // 内部钩子函数, 用于扩展插件
+    this.internalHooks = {
+      request: interceptor([]),
+      response: interceptor([])
     };
     // 合并参数
     this.defaults = deepAssign({}, defaults, options);
@@ -689,10 +685,7 @@
       headers[CONTENT_TYPE] = ctype;
     }
 
-    var ref = this;
-      var xhrHooks = ref.xhrHooks;
-    opts.xhrHooks = xhrHooks;
-    return request$1(opts, xhrHooks.request, xhrHooks.response);
+    return request$1(opts, this.internalHooks, this.interceptors);
   };
 
   /**
@@ -788,19 +781,21 @@
   var instance = createInstance();
 
   function auth (ref) {
-    var xhrHooks = ref.xhrHooks;
+    var internalHooks = ref.internalHooks;
 
-    xhrHooks.request.push(function (ref) {
-      var auth = ref.auth;
-      var headers = ref.headers;
-
-      // HTTP basic authentication
-      if (auth) {
-        var username = auth.username || '';
-        var password = auth.password || '';
-        headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
-      }
-    });
+    if (window && window.window === window) {
+      internalHooks.request.use(function (options) {
+        // HTTP basic authentication
+        var auth = options.auth;
+        var headers = options.headers;
+        if (auth) {
+          var username = auth.username || '';
+          var password = auth.password || '';
+          headers.Authorization = 'Basic ' + window.btoa(username + ':' + password);
+        }
+        return options;
+      });
+    }
   }
 
   function isNumber (value) {
@@ -903,27 +898,31 @@
   }
 
   function xsrf (ref) {
-    var xhrHooks = ref.xhrHooks;
+    var internalHooks = ref.internalHooks;
 
-    xhrHooks.request.push(function (ref) {
-      var url = ref.url;
-      var withCredentials = ref.withCredentials;
-      var xsrfHeaderName = ref.xsrfHeaderName;
-      var xsrfCookieName = ref.xsrfCookieName;
-      var headers = ref.headers;
+    if (window && window.window === window) {
+      internalHooks.request.use(function (options) {
+        var url = options.url;
+        var headers = options.headers;
+        var withCredentials = options.withCredentials;
+        var xsrfCookieName = options.xsrfCookieName; if ( xsrfCookieName === void 0 ) xsrfCookieName = 'XSRF-TOKEN';
+        var xsrfHeaderName = options.xsrfHeaderName; if ( xsrfHeaderName === void 0 ) xsrfHeaderName = 'X-XSRF-TOKEN';
 
-      // 判断是浏览器环境
-      if (isStandardBrowserEnv()) {
-        // 增加 xsrf header
-        var xsrfValue = (withCredentials || isURLSameOrigin(url)) && xsrfCookieName ?
-          cookies.get(xsrfCookieName) :
-          undefined;
+        // 判断是浏览器环境
+        if (isStandardBrowserEnv()) {
+          // 增加 xsrf header
+          var xsrfValue = (withCredentials || isURLSameOrigin(url)) && xsrfCookieName ?
+            cookies.get(xsrfCookieName) :
+            undefined;
 
-        if (xsrfValue) {
-          headers[xsrfHeaderName] = xsrfValue;
+          if (xsrfValue) {
+            headers[xsrfHeaderName] = xsrfValue;
+          }
         }
-      }
-    });
+
+        return options;
+      });
+    }
   }
 
   var rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
@@ -937,15 +936,19 @@
   }
 
   function resHeaders (ref) {
-    var xhrHooks = ref.xhrHooks;
+    var internalHooks = ref.internalHooks;
 
-    xhrHooks.response.push(function (xhr, res, ref) {
-      var getAllResponseHeaders = ref.getAllResponseHeaders;
-
-      if (getAllResponseHeaders && xhr.getAllResponseHeaders) {
-        res.headers = parseRawHeaders(xhr.getAllResponseHeaders());
-      }
-    });
+    if (window && window.XMLHttpRequest) {
+      internalHooks.response.use(function (response) {
+        var request = response.request;
+        var options = response.options;
+        var getAllResponseHeaders = options.getAllResponseHeaders;
+        if (getAllResponseHeaders && request.getAllResponseHeaders) {
+          response.headers = parseRawHeaders(request.getAllResponseHeaders());
+        }
+        return response;
+      });
+    }
   }
 
   instance

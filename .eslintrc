@@ -6,6 +6,7 @@
     "jest": true,
     "describe": true,
     "it": true,
+    "test": true,
     "expect": true,
     "beforeAll": true,
     "afterAll": true

@@ -8,10 +8,15 @@ function parseRawHeaders(rawHeaders) {
   return responseHeaders;
 }
 
-export default function ({ xhrHooks }) {
-  xhrHooks.response.push((xhr, res, { getAllResponseHeaders }) => {
-    if (getAllResponseHeaders && xhr.getAllResponseHeaders) {
-      res.headers = parseRawHeaders(xhr.getAllResponseHeaders());
-    }
-  });
+export default function ({ internalHooks }) {
+  if (window && window.XMLHttpRequest) {
+    internalHooks.response.use((response) => {
+      const { request, options } = response;
+      const { getAllResponseHeaders } = options;
+      if (getAllResponseHeaders && request.getAllResponseHeaders) {
+        response.headers = parseRawHeaders(request.getAllResponseHeaders());
+      }
+      return response;
+    });
+  }
 }
