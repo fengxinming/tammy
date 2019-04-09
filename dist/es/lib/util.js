@@ -1,31 +1,11 @@
-import isNil from 'celia/es/isNil';
-import isObject from 'celia/es/isObject';
-import forIn from 'celia/es/forIn';
-import forEach from 'celia/es/forEach';
-import forSlice from 'celia/es/forSlice';
-import append from 'celia/es/array/append';
-import removeAt from 'celia/es/array/removeAt';
+import 'celia/array/append.proto';
+import isObject from 'celia/isObject';
+import forOwn from 'celia/object/forOwn';
+import forSlice from 'celia/array/forSlice';
+import removeAt from 'celia/array/removeAt';
+import assign from 'celia/object/assign';
 
-import { ETIMEOUT, ENETWORK } from './constants';
-
-/**
- * 派生对象
- * @param {Object} target
- * @param {...Object}
- */
-export const assign = Object.assign || function (target) {
-  if (isNil(target)) {
-    throw new TypeError('Cannot convert undefined or null to object');
-  }
-  const to = Object(target);
-  const args = arguments;
-  forEach(args, (nextSource) => {
-    forIn(nextSource, (nextValue, nextKey) => {
-      to[nextKey] = nextValue;
-    });
-  });
-  return to;
-};
+import { ETIMEDOUT, ENETWORK } from './constants';
 
 /**
  * 深度合并
@@ -33,7 +13,7 @@ export const assign = Object.assign || function (target) {
  * @param {Object} destObj
  */
 export function deepMerge(srcObj, destObj) {
-  forIn(destObj, (val, key) => {
+  forOwn(destObj, (val, key) => {
     if (isObject(val)) {
       let source = srcObj[key];
       // 如果原对象对应的key值是对象，继续深度复制
@@ -51,8 +31,7 @@ export function deepMerge(srcObj, destObj) {
  * @param {Object} result
  */
 export function deepAssign(result) {
-  const args = arguments;
-  forSlice(args, 1, (arg) => {
+  forSlice(arguments, 1, (arg) => {
     deepMerge(result, arg);
   });
   return result;
@@ -75,7 +54,7 @@ export function createError(message, options) {
  * @param {String} normalizedName
  */
 export function normalizeHeaderName(headers, normalizedName) {
-  forIn(headers, (value, name) => {
+  forOwn(headers, (value, name) => {
     if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
       headers[normalizedName] = value;
       delete headers[name];
@@ -89,8 +68,8 @@ export function normalizeHeaderName(headers, normalizedName) {
  */
 export function toFormString(obj) {
   const form = [];
-  forIn(obj, (val, key) => {
-    append(form, `${key}=${val}`);
+  forOwn(obj, (val, key) => {
+    form.append(`${key}=${val}`);
   });
   return form.join('&');
 }
@@ -100,8 +79,7 @@ export function toFormString(obj) {
  * @param {Promise} promise
  */
 export function preloadHooks(promise) {
-  const args = arguments;
-  forSlice(args, 1, (hooks) => {
+  forSlice(arguments, 1, (hooks) => {
     hooks.forEach((hook) => {
       promise = isObject(hook) ? promise.then(hook.fulfilled, hook.rejected) : promise.then(hook);
     });
@@ -142,8 +120,7 @@ export const logErr = (console && console.error) || function () { };
  */
 export function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
-    append(arr, { fulfilled, rejected });
-    return arr;
+    return arr.append({ fulfilled, rejected });
   };
   arr.eject = function (index) {
     removeAt(index);
@@ -167,8 +144,8 @@ export function createStatusError(status, options) {
  * @param {Number} timeout
  * @param {Object} options
  */
-export function createTimeoutError(timeout, options) {
-  options.code = ETIMEOUT;
+export function createTimedoutError(timeout, options) {
+  options.code = ETIMEDOUT;
   return createError(`Timeout of ${timeout}ms exceeded`, options);
 }
 

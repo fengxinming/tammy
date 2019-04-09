@@ -2,7 +2,7 @@
 
 [![npm package](https://nodei.co/npm/tammy.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy)
 
-> Note: Tiny promise based HTTP client for the browser
+> Note: The progressive HTTP client for the browser and node.js
 
 ---
 
@@ -26,11 +26,11 @@
 ### Load `tammy` via classical `<script>` tag
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/tammy/tammy.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy/tammy.min.js"></script>
 
 // or
 
-<script src="https://cdn.jsdelivr.net/npm/tammy/tammy.browser.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy/tammy.browser.min.js"></script>
 ```
 
 ### CommonJS style with npm

@@ -1,6 +1,7 @@
-import isObject from 'celia/es/isObject';
+import isObject from 'celia/isObject';
+import assign from 'celia/object/assign';
 import Tammy from './lib/Tammy';
-import { deepMerge, assign } from './lib/util';
+import { deepMerge } from './lib/util';
 import { abort, abortAll, isAborted } from './lib/abort';
 
 function createInstance(options) {

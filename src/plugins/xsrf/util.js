@@ -1,5 +1,5 @@
-import isNil from 'celia/es/isNil';
-import isString from 'celia/es/isString';
+import isNil from 'celia/isNil';
+import isString from 'celia/isString';
 
 export function isStandardBrowserEnv() {
   if (!isNil(navigator) && (navigator.product === 'ReactNative' ||

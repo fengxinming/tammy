@@ -1,6 +1,6 @@
-import isObject from 'celia/es/isObject';
+import isObject from 'celia/isObject';
 import { createError } from './util';
-import forIn from 'celia/es/forIn';
+import forOwn from 'celia/object/forOwn';
 import { ECONNRESET } from './constants';
 
 const MESSAGE = 'Request aborted';
@@ -30,7 +30,7 @@ export function abort(token, anything, ctx) {
 }
 
 export function abortAll(anything, ctx) {
-  forIn(managers, (fn, token) => {
+  forOwn(managers, (fn, token) => {
     fn(buildError(anything));
     delete managers[token];
   });

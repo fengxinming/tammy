@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.6
+ * tammy.js v1.0.0-beta.7
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -16,6 +16,13 @@ function iteratorCallback (iterator, context) {
   return context ? iterator.bind(context) : iterator;
 }
 
+function forSlice (value, start, end, iterator, context) {
+  var cb = iteratorCallback(iterator, context);
+  for (var i = start, returnValue = (void 0); returnValue !== false && i < end; i++) {
+    returnValue = cb(value[i], i, value);
+  }
+}
+
 function forOwn (value, iterator, context) {
   var cb = iteratorCallback(iterator, context);
   for (var key in value) {
@@ -28,8 +35,26 @@ function forOwn$1 (value, iterator, context) {
   return isObject(value) && forOwn(value, iterator, context);
 }
 
+var assign = Object.assign || function (target) {
+  if (isNil(target)) {
+    throw new TypeError('Cannot convert undefined or null to object');
+  }
+
+  var to = Object(target);
+
+  forSlice(arguments, 1, arguments.length, function (nextSource) {
+
+    forOwn$1(nextSource, function (nextVal, nextKey) {
+      to[nextKey] = nextVal;
+    });
+
+  });
+  return to;
+};
+
 function append (arr, obj) {
   arr[arr.length] = obj;
+  return arr;
 }
 
 function stringify(obj, sep, eq) {
@@ -47,14 +72,7 @@ function stringify(obj, sep, eq) {
 }
 
 function isAbsolute (url) {
-  return /^([a-z][a-z0-9+\-.]*:)?\/\//i.test(url);
-}
-
-function forSlice (value, start, end, iterator, context) {
-  var cb = iteratorCallback(iterator, context);
-  for (var i = start, returnValue = (void 0); returnValue !== false && i < end; i++) {
-    returnValue = cb(value[i], i, value);
-  }
+  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
 }
 
 function joinURLs (baseURL) {
@@ -76,76 +94,84 @@ function joinURLs (baseURL) {
   return baseURL;
 }
 
-function forIn (value, iterator, context) {
-  var cb = iteratorCallback(iterator, context);
-  for (var key in value) {
-    if (cb(value[key], key, value) === false) {
-      break;
-    }  }
+function isUndefined (value) {
+  return typeof value === 'undefined';
 }
 
-function forIn$1 (value, iterator, context) {
-  return isObject(value) && forIn(value, iterator, context);
+function defineProto(proto, isDOM) {
+  return function (name, options) {
+    if (name in proto) {
+      name = 'c$' + name;
+    }
+    if (isDOM) {
+      if (!isUndefined(options.value) && isUndefined(options.writable)) {
+        options.writable = true;
+      }
+      Object.defineProperty(proto, name, assign({
+        enumerable: false,
+        configurable: true
+      }, options));
+    } else {
+      proto[name] = options;
+    }
+  };
 }
 
-function forEach (value, iterator, context) {
-  forSlice(value, 0, value.length, iterator, context);
-}
+var arrayProto = Array.prototype;
 
-function forEach$1 (value, iterator, context) {
-  return value && forEach(value, iterator, context);
-}
+var defineArrayProto = defineProto(arrayProto);
+
+defineArrayProto('append', function (value) {
+  return append(this, value);
+});
 
 function isFunction (value) {
   return typeof value === 'function';
 }
 
-function forSlice$1 (value, start, end, iterator, context) {
-  if (value) {
-    if (isFunction(end)) {
-      context = iterator;
-      iterator = end;
-      end = value.length;
-    }
-    forSlice(value, start, end || value.length, iterator, context);
-  }
+function max(a, b) {
+  return a >= b ? a : b;
 }
 
-function append$1 (arr, obj) {
-  if (arr) {
-    append(arr, obj);
-    return obj;
+function compareIndex (fromIndex, length) {
+  return fromIndex < 0 ? max(0, length + fromIndex) : fromIndex;
+}
+
+function forSlice$1 (value, start, end, iterator, context) {
+  var len = value.length;
+  if (isFunction(end)) {
+    context = iterator;
+    iterator = end;
+    end = len;
+  } else {
+    end = compareIndex(end, len);
+  }
+  start = compareIndex(start, len);
+  forSlice(value, start, end, iterator, context);
+}
+
+function forSlice$2 (value, start, end, iterator, context) {
+  if (value) {
+    forSlice$1(value, start, end, iterator, context);
   }
 }
 
 function removeAt (elems, index) {
-  elems.splice(index, 1);
-  return index;
+  return elems.splice(index, 1)[0] || null;
+}
+
+var isArray = Array.isArray;
+function removeAt$1 (elems, index) {
+  if (elems && isArray(elems)) {
+    return removeAt(elems, index);
+  }
+  return null;
 }
 
 var CONTENT_TYPE = 'Content-Type';
 var ECONNRESET = 'ECONNRESET';
-var ETIMEOUT = 'ETIMEOUT';
+var ETIMEDOUT = 'ETIMEDOUT';
 var ENETWORK = 'ENETWORK';
-
-/**
- * 派生对象
- * @param {Object} target
- * @param {...Object}
- */
-var assign = Object.assign || function (target) {
-  if (isNil(target)) {
-    throw new TypeError('Cannot convert undefined or null to object');
-  }
-  var to = Object(target);
-  var args = arguments;
-  forEach$1(args, function (nextSource) {
-    forIn$1(nextSource, function (nextValue, nextKey) {
-      to[nextKey] = nextValue;
-    });
-  });
-  return to;
-};
 
 /**
  * 深度合并
@@ -153,7 +179,7 @@ var assign = Object.assign || function (target) {
  * @param {Object} destObj
  */
 function deepMerge(srcObj, destObj) {
-  forIn$1(destObj, function (val, key) {
+  forOwn$1(destObj, function (val, key) {
     if (isObject(val)) {
       var source = srcObj[key];
       // 如果原对象对应的key值是对象，继续深度复制
@@ -171,8 +197,7 @@ function deepMerge(srcObj, destObj) {
  * @param {Object} result
  */
 function deepAssign(result) {
-  var args = arguments;
-  forSlice$1(args, 1, function (arg) {
+  forSlice$2(arguments, 1, function (arg) {
     deepMerge(result, arg);
   });
   return result;
@@ -195,8 +220,8 @@ function createError(message, options) {
  */
 function toFormString(obj) {
   var form = [];
-  forIn$1(obj, function (val, key) {
-    append$1(form, (key + "=" + val));
+  forOwn$1(obj, function (val, key) {
+    form.append((key + "=" + val));
   });
   return form.join('&');
 }
@@ -206,8 +231,7 @@ function toFormString(obj) {
  * @param {Promise} promise
  */
 function preloadHooks(promise) {
-  var args = arguments;
-  forSlice$1(args, 1, function (hooks) {
+  forSlice$2(arguments, 1, function (hooks) {
     hooks.forEach(function (hook) {
       promise = isObject(hook) ? promise.then(hook.fulfilled, hook.rejected) : promise.then(hook);
     });
@@ -248,11 +272,10 @@ var logErr = (console && console.error) || function () { };
  */
 function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
-    append$1(arr, { fulfilled: fulfilled, rejected: rejected });
-    return arr;
+    return arr.append({ fulfilled: fulfilled, rejected: rejected });
   };
   arr.eject = function (index) {
-    removeAt(index);
+    removeAt$1(index);
     return arr;
   };
   return arr;
@@ -273,8 +296,8 @@ function createStatusError(status, options) {
  * @param {Number} timeout
  * @param {Object} options
  */
-function createTimeoutError(timeout, options) {
-  options.code = ETIMEOUT;
+function createTimedoutError(timeout, options) {
+  options.code = ETIMEDOUT;
   return createError(("Timeout of " + timeout + "ms exceeded"), options);
 }
 
@@ -400,7 +423,7 @@ function abort(token, anything, ctx) {
 }
 
 function abortAll(anything, ctx) {
-  forIn$1(managers, function (fn, token) {
+  forOwn$1(managers, function (fn, token) {
     fn(buildError(anything));
     delete managers[token];
   });
@@ -536,7 +559,7 @@ function xhr (options) {
     // 监听超时处理
     request.ontimeout = function () {
       clearAbortions(abortedToken);
-      reject(createTimeoutError(timeout, {
+      reject(createTimedoutError(timeout, {
         options: options,
         request: request
       }));
@@ -548,7 +571,7 @@ function xhr (options) {
     // 增加 headers
     var headers = options.headers;
     if (isFunction(request.setRequestHeader)) {
-      forIn$1(headers, function (val, key) {
+      forOwn$1(headers, function (val, key) {
         if (isNil(data) && key === CONTENT_TYPE) {
           // 如果data为空，就移除content-type
           delete headers[key];

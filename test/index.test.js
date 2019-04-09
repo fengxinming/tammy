@@ -300,7 +300,7 @@ describe('测试 tammy', () => {
         getAllResponseHeaders: true
       });
     } catch (e) {
-      expect(e.code).toBe('ETIMEOUT');
+      expect(e.code).toBe('ETIMEDOUT');
     }
     window.XMLHttpRequest = makeXHR();
   });

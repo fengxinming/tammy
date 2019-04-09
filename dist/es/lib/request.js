@@ -1,7 +1,7 @@
-import isObject from 'celia/es/isObject';
-import stringify from 'celia/es/qs/stringify';
-import isAbsolute from 'celia/es/url/isAbsolute';
-import joinURLs from 'celia/es/url/join';
+import isObject from 'celia/isObject';
+import stringify from 'celia/qs/stringify';
+import isAbsolute from 'celia/url/isAbsolute';
+import joinURLs from 'celia/url/join';
 import { toFormString, preloadHooks, joinQS, disableCache } from './util';
 
 const CONTENT_TYPE = 'Content-Type';

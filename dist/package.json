@@ -1,7 +1,7 @@
 {
   "name": "tammy",
-  "version": "1.0.0-beta.6",
-  "description": "Tiny promise based HTTP client for the browser and node.js.",
+  "version": "1.0.0-beta.7",
+  "description": "The progressive HTTP client for the browser and node.js.",
   "main": "./tammy.common.js",
   "module": "./tammy.es.js",
   "unpkg": "./tammy.js",
@@ -56,7 +56,7 @@
     "zlib": "^1.0.5"
   },
   "dependencies": {
-    "celia": "^3.0.8",
+    "celia": "^4.0.2",
     "clrsole": "^1.0.0-beta.1"
   }
 }

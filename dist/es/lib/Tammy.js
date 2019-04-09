@@ -1,5 +1,6 @@
+import assign from 'celia/object/assign';
 import request from './request';
-import { deepAssign, assign, interceptor } from './util';
+import { deepAssign, interceptor } from './util';
 import defaults from './defaults';
 import xhr from './xhr';
 import { CONTENT_TYPE } from './constants';

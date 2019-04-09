@@ -1,4 +1,4 @@
-import type from 'celia/es/type';
+import type from 'celia/type';
 
 export function makeXHR(opts) {
   const xhrMockClass = () => {

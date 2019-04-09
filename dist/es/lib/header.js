@@ -1,4 +1,4 @@
-import { assign } from './util';
+import assign from 'celia/object/assign';
 
 export const CONTENT_TYPES = {
   json: 'application/json; charset=UTF-8',

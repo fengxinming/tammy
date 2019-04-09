@@ -1,8 +1,9 @@
-import forIn from 'celia/es/forIn';
-import isNil from 'celia/es/isNil';
-import isString from 'celia/es/isString';
-import isFunction from 'celia/es/isFunction';
-import { logErr, assign, createNetworkError, createTimeoutError, createStatusError } from './util';
+import forOwn from 'celia/object/forOwn';
+import isNil from 'celia/isNil';
+import isString from 'celia/isString';
+import isFunction from 'celia/isFunction';
+import assign from 'celia/object/assign';
+import { logErr, createNetworkError, createTimedoutError, createStatusError } from './util';
 import { CONTENT_TYPE } from './constants';
 import { push, managers } from './abort';
 
@@ -125,7 +126,7 @@ export default function (options) {
     // 监听超时处理
     request.ontimeout = function () {
       clearAbortions(abortedToken);
-      reject(createTimeoutError(timeout, {
+      reject(createTimedoutError(timeout, {
         options,
         request
       }));
@@ -137,7 +138,7 @@ export default function (options) {
     // 增加 headers
     const { headers } = options;
     if (isFunction(request.setRequestHeader)) {
-      forIn(headers, (val, key) => {
+      forOwn(headers, (val, key) => {
         if (isNil(data) && key === CONTENT_TYPE) {
           // 如果data为空，就移除content-type
           delete headers[key];
