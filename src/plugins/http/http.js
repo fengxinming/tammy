@@ -1,5 +1,4 @@
 import isFunction from 'celia/isFunction';
-import assign from 'celia/object/assign';
 import { push, managers } from '../../lib/abort';
 
 const { URL } = require('url');
@@ -148,7 +147,7 @@ export default function (options) {
         let body = Buffer.concat(chunks, contentLength);
 
         if (error) {
-          reject(assign(error, {
+          reject(Object.assign(error, {
             options,
             request: req
           }));
@@ -169,7 +168,7 @@ export default function (options) {
 
         decodeResponseBody(res, body, (err, buf) => {
           if (err) {
-            reject(assign(err, response));
+            reject(Object.assign(err, response));
           } else {
             switch (responseType) {
               case 'json':
@@ -199,7 +198,7 @@ export default function (options) {
 
     req.on('error', (e) => {
       error = e;
-      reject(assign(error, {
+      reject(Object.assign(error, {
         options,
         request: req
       }));

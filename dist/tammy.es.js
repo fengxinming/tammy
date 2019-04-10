@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.7
+ * tammy.js v1.0.0-beta.8
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -94,32 +94,19 @@ function joinURLs (baseURL) {
   return baseURL;
 }
 
-function isUndefined (value) {
-  return typeof value === 'undefined';
-}
-
-function defineProto(proto, isDOM) {
-  return function (name, options) {
-    if (name in proto) {
-      name = 'c$' + name;
-    }
-    if (isDOM) {
-      if (!isUndefined(options.value) && isUndefined(options.writable)) {
-        options.writable = true;
-      }
-      Object.defineProperty(proto, name, assign({
-        enumerable: false,
-        configurable: true
-      }, options));
-    } else {
-      proto[name] = options;
-    }
-  };
+function checkProto(proto, name) {
+  if (name in proto) {
+    name = 'c$' + name;
+  }
+  return name;
 }
 
 var arrayProto = Array.prototype;
 
-var defineArrayProto = defineProto(arrayProto);
+function defineArrayProto (name, val) {
+  name = checkProto(arrayProto, name);
+  arrayProto[name] = val;
+}
 
 defineArrayProto('append', function (value) {
   return append(this, value);

@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.7
+ * tammy.js v1.0.0-beta.8
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -9,81 +9,19 @@ function isFunction (value) {
   return typeof value === 'function';
 }
 
-function isNil (value) {
-  /* eslint eqeqeq: 0 */
-  return value == null;
-}
-
-function iteratorCallback (iterator, context) {
-  return context ? iterator.bind(context) : iterator;
-}
-
-function forSlice (value, start, end, iterator, context) {
-  var cb = iteratorCallback(iterator, context);
-  for (var i = start, returnValue = (void 0); returnValue !== false && i < end; i++) {
-    returnValue = cb(value[i], i, value);
+function checkProto(proto, name) {
+  if (name in proto) {
+    name = 'c$' + name;
   }
-}
-
-function forOwn (value, iterator, context) {
-  var cb = iteratorCallback(iterator, context);
-  for (var key in value) {
-    if (value.hasOwnProperty(key) && cb(value[key], key, value) === false) {
-      break;
-    }  }
-}
-
-function isObject (value) {
-  return !isNil(value) && typeof value === 'object';
-}
-
-function forOwn$1 (value, iterator, context) {
-  return isObject(value) && forOwn(value, iterator, context);
-}
-
-var assign = Object.assign || function (target) {
-  if (isNil(target)) {
-    throw new TypeError('Cannot convert undefined or null to object');
-  }
-
-  var to = Object(target);
-
-  forSlice(arguments, 1, arguments.length, function (nextSource) {
-
-    forOwn$1(nextSource, function (nextVal, nextKey) {
-      to[nextKey] = nextVal;
-    });
-
-  });
-  return to;
-};
-
-function isUndefined (value) {
-  return typeof value === 'undefined';
-}
-
-function defineProto(proto, isDOM) {
-  return function (name, options) {
-    if (name in proto) {
-      name = 'c$' + name;
-    }
-    if (isDOM) {
-      if (!isUndefined(options.value) && isUndefined(options.writable)) {
-        options.writable = true;
-      }
-      Object.defineProperty(proto, name, assign({
-        enumerable: false,
-        configurable: true
-      }, options));
-    } else {
-      proto[name] = options;
-    }
-  };
+  return name;
 }
 
 var arrayProto = Array.prototype;
 
-var defineArrayProto = defineProto(arrayProto);
+function defineArrayProto (name, val) {
+  name = checkProto(arrayProto, name);
+  arrayProto[name] = val;
+}
 
 function append (arr, obj) {
   arr[arr.length] = obj;
@@ -244,7 +182,7 @@ function http$1 (options) {
         var body = Buffer.concat(chunks, contentLength);
 
         if (error) {
-          reject(assign(error, {
+          reject(Object.assign(error, {
             options: options,
             request: req
           }));
@@ -262,7 +200,7 @@ function http$1 (options) {
 
         decodeResponseBody(res, body, function (err, buf) {
           if (err) {
-            reject(assign(err, response));
+            reject(Object.assign(err, response));
           } else {
             switch (responseType) {
               case 'json':
@@ -292,7 +230,7 @@ function http$1 (options) {
 
     req.on('error', function (e) {
       error = e;
-      reject(assign(error, {
+      reject(Object.assign(error, {
         options: options,
         request: req
       }));
