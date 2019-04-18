@@ -1,6 +1,6 @@
 import assign from 'celia/object/assign';
 import request from './request';
-import { deepAssign, interceptor } from './util';
+import { assignDeep, interceptor } from './util';
 import defaults from './defaults';
 import xhr from './xhr';
 import { CONTENT_TYPE } from './constants';
@@ -23,7 +23,7 @@ export default class Tammy {
       response: interceptor([])
     };
     // 合并参数
-    this.defaults = deepAssign({}, defaults, options);
+    this.defaults = assignDeep({}, defaults, options);
   }
 
   /**

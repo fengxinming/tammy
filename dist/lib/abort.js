@@ -1,7 +1,7 @@
 import isObject from 'celia/isObject';
 import { createError } from './util';
 import forOwn from 'celia/object/forOwn';
-import { ECONNRESET } from './constants';
+import { ECONNABORTED } from './constants';
 
 const MESSAGE = 'Request aborted';
 export const managers = {};
@@ -18,7 +18,7 @@ function buildError(anything) {
     options = anything;
     anything = anything.message || MESSAGE;
   }
-  options.code = ECONNRESET;
+  options.code = ECONNABORTED;
   return createError(anything, options);
 }
 
@@ -44,5 +44,5 @@ export function push(fn) {
 }
 
 export function isAborted(e) {
-  return e && e.code === ECONNRESET;
+  return e && e.code === ECONNABORTED;
 }

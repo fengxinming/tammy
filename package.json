@@ -1,8 +1,8 @@
 {
   "name": "tammy",
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "description": "The progressive HTTP client for the browser and node.js.",
-  "main": "./tammy.common.js",
+  "main": "./tammy.c.js",
   "module": "./tammy.es.js",
   "unpkg": "./tammy.js",
   "jsdelivr": "./tammy.js",
@@ -56,7 +56,7 @@
     "zlib": "^1.0.5"
   },
   "dependencies": {
-    "celia": "^4.0.3",
+    "celia": "^4.0.7",
     "clrsole": "^1.0.0-beta.1"
   }
 }

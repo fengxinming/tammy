@@ -46,20 +46,36 @@ npm install tammy --save
 // es6
 import tammy from 'tammy';
 // or
-import tammy from 'tammy/es';
+import tammy from 'tammy/index';
 
 // optional modularity
 
 // use auth plugin
-import auth from 'tammy/es/auth';
+import auth from 'tammy/plugins/auth';
 // use xsrf plugin
-import xsrf from 'tammy/es/xsrf';
+import xsrf from 'tammy/plugins/xsrf';
 // use res-headers plugin
-import resHeaders from 'tammy/es/res-headers';
+import resHeaders from 'tammy/plugins/res-headers';
 tammy
   .use(auth)
   .use(xsrf)
   .use(resHeaders);
+
+// es5
+const tammy = require('tammy');
+
+// optional modularity
+
+// use auth plugin
+const auth = require('tammy/auth');
+// use xsrf plugin
+const xsrf = require('tammy/xsrf');
+// use res-headers plugin
+const resHeaders = require('tammy/res-headers');
+tammy
+  .use(auth)
+  .use(xsrf)
+  .use(resHeaders);  
 
 ```
 
@@ -538,7 +554,7 @@ tammy.post('/user/12345', {
 })
 
 // abort the request (the message parameter is optional)
-tammy.abort('Operation aborted by the user.');
+tammy.abort(abortionToken, 'Operation aborted by the user.');
 
 // abort all requests
 tammy.abortAll();

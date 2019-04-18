@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.8
+ * tammy.js v1.0.0-beta.9
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */

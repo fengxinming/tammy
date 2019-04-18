@@ -5,20 +5,20 @@ import forSlice from 'celia/array/forSlice';
 import removeAt from 'celia/array/removeAt';
 import assign from 'celia/object/assign';
 
-import { ETIMEDOUT, ENETWORK } from './constants';
+import { ECONNRESET, ENETWORK } from './constants';
 
 /**
  * 深度合并
  * @param {Object} srcObj
  * @param {Object} destObj
  */
-export function deepMerge(srcObj, destObj) {
+export function mergeDeep(srcObj, destObj) {
   forOwn(destObj, (val, key) => {
     if (isObject(val)) {
       let source = srcObj[key];
       // 如果原对象对应的key值是对象，继续深度复制
       source = isObject(source) ? source : {};
-      srcObj[key] = deepMerge(source, val);
+      srcObj[key] = mergeDeep(source, val);
     } else {
       srcObj[key] = val;
     }
@@ -30,9 +30,9 @@ export function deepMerge(srcObj, destObj) {
  * 合并对象
  * @param {Object} result
  */
-export function deepAssign(result) {
+export function assignDeep(result) {
   forSlice(arguments, 1, (arg) => {
-    deepMerge(result, arg);
+    mergeDeep(result, arg);
   });
   return result;
 }
@@ -145,7 +145,7 @@ export function createStatusError(status, options) {
  * @param {Object} options
  */
 export function createTimedoutError(timeout, options) {
-  options.code = ETIMEDOUT;
+  options.code = ECONNRESET;
   return createError(`Timeout of ${timeout}ms exceeded`, options);
 }
 

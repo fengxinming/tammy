@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.8
+ * tammy.js v1.0.0-beta.9
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -163,7 +163,8 @@
 
   var CONTENT_TYPE = 'Content-Type';
   var ECONNRESET = 'ECONNRESET';
-  var ETIMEDOUT = 'ETIMEDOUT';
+  var ECONNABORTED = 'ECONNABORTED';
+  // export const ETIMEDOUT = 'ETIMEDOUT';
   var ENETWORK = 'ENETWORK';
 
   /**
@@ -171,13 +172,13 @@
    * @param {Object} srcObj
    * @param {Object} destObj
    */
-  function deepMerge(srcObj, destObj) {
+  function mergeDeep(srcObj, destObj) {
     forOwn$1(destObj, function (val, key) {
       if (isObject(val)) {
         var source = srcObj[key];
         // 如果原对象对应的key值是对象，继续深度复制
         source = isObject(source) ? source : {};
-        srcObj[key] = deepMerge(source, val);
+        srcObj[key] = mergeDeep(source, val);
       } else {
         srcObj[key] = val;
       }
@@ -189,9 +190,9 @@
    * 合并对象
    * @param {Object} result
    */
-  function deepAssign(result) {
+  function assignDeep(result) {
     forSlice$2(arguments, 1, function (arg) {
-      deepMerge(result, arg);
+      mergeDeep(result, arg);
     });
     return result;
   }
@@ -290,7 +291,7 @@
    * @param {Object} options
    */
   function createTimedoutError(timeout, options) {
-    options.code = ETIMEDOUT;
+    options.code = ECONNRESET;
     return createError(("Timeout of " + timeout + "ms exceeded"), options);
   }
 
@@ -404,7 +405,7 @@
       options = anything;
       anything = anything.message || MESSAGE;
     }
-    options.code = ECONNRESET;
+    options.code = ECONNABORTED;
     return createError(anything, options);
   }
 
@@ -430,7 +431,7 @@
   }
 
   function isAborted(e) {
-    return e && e.code === ECONNRESET;
+    return e && e.code === ECONNABORTED;
   }
 
   function clearAbortions(abortedToken) {
@@ -672,7 +673,7 @@
       response: interceptor([])
     };
     // 合并参数
-    this.defaults = deepAssign({}, defaults, options);
+    this.defaults = assignDeep({}, defaults, options);
   };
 
   /**
@@ -779,7 +780,7 @@
 
     ['get', 'delete', 'head', 'options', 'post', 'put', 'patch'].forEach(function (method) {
       $http[method] = function (url, data, options) {
-        return $http(url, deepMerge({ method: method, data: data }, options));
+        return $http(url, mergeDeep({ method: method, data: data }, options));
       };
     });
 
