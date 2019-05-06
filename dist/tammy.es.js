@@ -27,14 +27,14 @@ function iteratorCallback (iterator, context) {
 function _for (handler, value, iterator, context) {
   var cb = iteratorCallback(iterator, context);
   for (var key in value) {
-    if (handler(cb, value[key], key)) {
+    if (handler(cb, value[key], key) === false) {
       break;
     }  }
 }
 
 function forOwn (value, iterator, context) {
   _for(
-    function (cb, val, key) { return value.hasOwnProperty(key) && cb(val, key, value) === false; },
+    function (cb, val, key) { return value.hasOwnProperty(key) && cb(val, key, value); },
     value, iterator, context
   );
 }

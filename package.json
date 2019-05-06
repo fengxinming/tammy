@@ -56,7 +56,7 @@
     "zlib": "^1.0.5"
   },
   "dependencies": {
-    "celia": "^5.1.2",
+    "celia": "^5.1.3",
     "clrsole": "^1.0.1",
     "kick-array": "^1.2.2"
   }
