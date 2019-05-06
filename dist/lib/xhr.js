@@ -1,17 +1,6 @@
-import forOwn from 'celia/object/forOwn';
-import isNil from 'celia/isNil';
-import isString from 'celia/isString';
-import isFunction from 'celia/isFunction';
-import assign from 'celia/object/assign';
-import { logErr, createNetworkError, createTimedoutError, createStatusError } from './util';
+import { forOwn, isNil, isString, assign, isFunction } from './util';
+import { logErr, createNetworkError, createTimedoutError, createStatusError } from './helper';
 import { CONTENT_TYPE } from './constants';
-import { push, managers } from './abort';
-
-function clearAbortions(abortedToken) {
-  if (abortedToken) {
-    delete managers[abortedToken];
-  }
-}
 
 export default function (options) {
   return new Promise((resolve, reject) => {
@@ -24,18 +13,14 @@ export default function (options) {
       responseType,
       onDownloadProgress,
       onUploadProgress,
-      abortion
+      _abortion
     } = options;
-
-    let abortedError;
-    let abortedToken;
 
     // 异步请求对象
     let request = new window.XMLHttpRequest();
 
     const gc = () => {
-      abortedError = null;
-      abortedToken = null;
+      _abortion.remove();
       request = null;
     };
 
@@ -51,9 +36,7 @@ export default function (options) {
         return;
       }
 
-      clearAbortions(abortedToken);
-
-      const { status, responseURL, responseText } = request;
+      const { status, responseURL } = request;
 
       // 状态为0，或者没有内容返回
       if (status === 0 && !(responseURL && responseURL.indexOf('file:') === 0)) {
@@ -61,7 +44,7 @@ export default function (options) {
       }
 
       // 处理响应
-      let responseData = (!responseType || responseType === 'text') ? request : (request.response || responseText);
+      let responseData = (!responseType || responseType === 'text') ? request : (request.response || request.responseText);
       const response = {
         data: responseData,
         statusText: request.statusText,
@@ -88,32 +71,21 @@ export default function (options) {
     };
 
     // 监听请求中断
-    request.onabort = function () {
-      if (!request) {
-        return;
-      }
-      reject(assign(abortedError, {
-        options,
-        request
-      }));
+    // request.onabort = function () {
+    //   if (!request) {
+    //     return;
+    //   }
+    //   reject(assign(_abortion.error, {
+    //     options,
+    //     request
+    //   }));
 
-      // 垃圾回收
-      clearAbortions(abortedToken);
-      gc();
-    };
-
-    // 主动中断请求
-    abortedToken = push((error) => {
-      abortedError = error;
-      request && request.abort();
-    });
-    if (isFunction(abortion)) {
-      abortion(abortedToken);
-    }
+    //   // 垃圾回收
+    //   gc();
+    // };
 
     // 监听网络错误
     request.onerror = function () {
-      clearAbortions(abortedToken);
       reject(createNetworkError(null, {
         options,
         request
@@ -125,7 +97,6 @@ export default function (options) {
 
     // 监听超时处理
     request.ontimeout = function () {
-      clearAbortions(abortedToken);
       reject(createTimedoutError(timeout, {
         options,
         request
@@ -172,6 +143,17 @@ export default function (options) {
 
     // 发送数据到服务端
     request.send(data || null);
+
+    // 添加中断请求函数
+    _abortion.push(() => {
+      reject(assign(_abortion.error, {
+        options,
+        request
+      }));
+      request && request.abort();
+      // 垃圾回收
+      gc();
+    });
 
   });
 }

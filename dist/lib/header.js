@@ -1,9 +1,9 @@
-import assign from 'celia/object/assign';
+import { assign } from './util';
 
 export const CONTENT_TYPES = {
-  json: 'application/json; charset=UTF-8',
-  form: 'application/x-www-form-urlencoded; charset=UTF-8',
-  'form-data': 'multipart/form-data; charset=UTF-8'
+  json: 'application/json; charset=utf-8',
+  form: 'application/x-www-form-urlencoded; charset=utf-8',
+  'form-data': 'multipart/form-data; charset=utf-8'
 };
 
 const DEFAULT_POST_HEADERS = {

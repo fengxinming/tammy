@@ -11,9 +11,7 @@ export function makeXHR(opts) {
       send() {
         setTimeout(xhr.onreadystatechange, 300);
       },
-      abort() {
-        xhr.onabort();
-      },
+      abort: jest.fn(),
       setRequestHeader: jest.fn(),
       addEventListener: jest.fn(),
       upload: {

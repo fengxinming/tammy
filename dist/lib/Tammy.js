@@ -1,10 +1,11 @@
-import assign from 'celia/object/assign';
+import { assign, assignDeep, isFunction } from './util';
 import request from './request';
-import { assignDeep, interceptor } from './util';
+import { interceptor } from './helper';
 import defaults from './defaults';
 import xhr from './xhr';
 import { CONTENT_TYPE } from './constants';
 import { setHeader, mergeHeaders, transformContentType } from './header';
+import { get } from './abortion';
 
 // 默认为客户端请求
 defaults.adapter = xhr;
@@ -34,7 +35,7 @@ export default class Tammy {
     // 合并全局参数
     opts = assign({}, this.defaults, opts);
 
-    let { method, headers, contentType } = opts;
+    let { method, headers, contentType, abortion } = opts;
     method = opts.method = method ? method.toUpperCase() : 'GET';
 
     // 合并headers
@@ -42,6 +43,11 @@ export default class Tammy {
     let ctype;
     if ((ctype = transformContentType(contentType))) {
       headers[CONTENT_TYPE] = ctype;
+    }
+
+    const _abortion = opts._abortion = get();
+    if (isFunction(abortion)) {
+      abortion(_abortion.id);
     }
 
     return request(opts, this.internalHooks, this.interceptors);

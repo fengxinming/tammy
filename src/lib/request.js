@@ -1,10 +1,6 @@
-import isObject from 'celia/isObject';
-import stringify from 'celia/qs/stringify';
-import isAbsolute from 'celia/url/isAbsolute';
-import joinURLs from 'celia/url/join';
-import { toFormString, preloadHooks, joinQS, disableCache } from './util';
-
-const CONTENT_TYPE = 'Content-Type';
+import { preloadHooks, disableCache } from './helper';
+import { isObject, formify, joinQS, stringify, isAbsolute, joinURLs } from './util';
+import { CONTENT_TYPE } from './constants';
 
 function request(options) {
   let {
@@ -39,7 +35,7 @@ function request(options) {
         if (!ctype.indexOf('application/json')) {
           data = JSON.stringify(data);
         } else {
-          data = toFormString(data);
+          data = formify(data);
         }
         options.data = data;
       }

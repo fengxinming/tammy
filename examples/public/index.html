@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Tammy</title>
+  <script type="text/javascript" src="/tammy.js"></script>
+  <script type="text/javascript">
+    var token, token2;
+    tammy({
+      url: '/api/sleep200',
+      abortion: function (t) {
+        token = t;
+      }
+    });
+    tammy.abort(token, '中断请求');
+
+    tammy({
+      url: '/api/sleep2000',
+      abortion: function (t) {
+        token2 = t;
+      }
+    });
+    setTimeout(function () {
+      tammy.abort(token2, '中断请求2');
+    }, 1000);
+  </script>
+</head>
+
+<body>
+  <div></div>
+</body>
+
+</html>

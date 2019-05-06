@@ -1,8 +1,9 @@
-import isObject from 'celia/isObject';
-import assign from 'celia/object/assign';
+import * as util from './lib/util';
 import Tammy from './lib/Tammy';
-import { mergeDeep } from './lib/util';
-import { abort, abortAll, isAborted } from './lib/abort';
+import { isAborted } from './lib/helper';
+import { abort, abortAll } from './lib/abortion';
+
+const { mergeDeep, isObject, assign } = util;
 
 function createInstance(options) {
   const tammy = new Tammy(options);
@@ -63,7 +64,8 @@ function createInstance(options) {
      * @param {String} anything
      */
     abort(token, anything) {
-      return abort(token, anything, $http);
+      abort(token, anything);
+      return $http;
     },
 
     /**
@@ -71,8 +73,14 @@ function createInstance(options) {
      * @param {String} anything
      */
     abortAll(anything) {
-      return abortAll(anything, $http);
-    }
+      abortAll(anything);
+      return $http;
+    },
+
+    /**
+     * 常用方法
+     */
+    util
   });
 
   ['get', 'delete', 'head', 'options', 'post', 'put', 'patch'].forEach((method) => {

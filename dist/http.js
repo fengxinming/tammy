@@ -1,46 +1,38 @@
 /*!
- * tammy.js v1.0.0-beta.9
+ * tammy.js v1.0.0
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
 'use strict';
-
-function isFunction (value) {
-  return typeof value === 'function';
-}
-
-function checkProto(proto, name) {
-  if (name in proto) {
-    name = 'c$' + name;
-  }
-  return name;
-}
-
-var arrayProto = Array.prototype;
-
-function defineArrayProto (name, val) {
-  name = checkProto(arrayProto, name);
-  arrayProto[name] = val;
-}
 
 function append (arr, obj) {
   arr[arr.length] = obj;
   return arr;
 }
 
-defineArrayProto('append', function (value) {
-  return append(this, value);
-});
-
-var logErr = (console && console.error) || function () { };
-
-function uuid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+function append$1 (arr, obj) {
+  if (arr) {
+    append(arr, obj);
+    return obj;
+  }
+  return arr;
 }
 
-function push(fn) {
-  var token = uuid();
-  return token;
+function isNil (value) {
+  /* eslint eqeqeq: 0 */
+  return value == null;
+}
+
+function isObject (value) {
+  return !isNil(value) && typeof value === 'object';
+}
+
+function isAbsolute (url) {
+  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
+}
+
+function isString (value) {
+  return typeof value === 'string';
 }
 
 var ref = require('url');
@@ -48,6 +40,7 @@ var URL = ref.URL;
 var http = require('http');
 var https = require('https');
 var zlib = require('zlib');
+var EventEmitter = require('events');
 var clrsole = require('clrsole');
 
 var RHTTPS = /https:?/;
@@ -72,7 +65,7 @@ function decodeResponseBody(res, body, cb) {
             if (err && err.name === 'Error') {
               err.name = 'UnzipError';
             }
-            cb(err, data);
+            cb(err, data, contentEncoding);
           });
           break;
         default:
@@ -102,46 +95,91 @@ function parseJSON(buf, encoding) {
   return json;
 }
 
-function http$1 (options) {
-  return new Promise(function (resolve, reject) {
-    var url = options.url;
+var Request = /*@__PURE__*/(function (EventEmitter) {
+  function Request () {
+    EventEmitter.apply(this, arguments);
+  }
+
+  if ( EventEmitter ) Request.__proto__ = EventEmitter;
+  Request.prototype = Object.create( EventEmitter && EventEmitter.prototype );
+  Request.prototype.constructor = Request;
+
+  Request.prototype.request = function request (options) {
+    var this$1 = this;
+
+
+    var protocol = options.protocol;
+    var host = options.host;
+    var family = options.family;
+    var port = options.port;
+    var localAddress = options.localAddress;
+    var socketPath = options.socketPath;
     var method = options.method;
-    var data = options.data;
+    var path = options.path;
     var headers = options.headers;
     var auth = options.auth;
-    var abortion = options.abortion;
-    var socketPath = options.socketPath;
-    var httpAgent = options.httpAgent;
-    var httpsAgent = options.httpsAgent;
+    var agent = options.agent;
+    var createConnection = options.createConnection;
+    var timeout = options.timeout;
+    var setHost = options.setHost;
+    var url = options.url;
     var responseEncoding = options.responseEncoding;
     var responseType = options.responseType;
-    var timeout = options.timeout;
+    var data = options.data;
 
-    // Parse url
-    var parsed = new URL(url);
-    var protocol = parsed.protocol || 'http:';
-    var isHttpsRequest = RHTTPS.test(protocol);
-    var agent = isHttpsRequest ? (httpsAgent || new https.Agent()) : httpAgent;
+    var error = null;
+    var parsed;
 
-    var httpOptions = {
-      path: parsed.pathname + parsed.search,
-      method: method,
-      headers: headers,
-      agent: agent
-    };
+    // 网络协议
+    protocol = protocol || 'http:';
+    url = url || path;
+    if (!isString(url)) {
+      error = new TypeError(("Invalid URL: " + url));
+      error.code = 'ERR_INVALID_URL';
+      throw error;
+    }
 
     // HTTP basic authentication
-    if (auth) {
+    if (isObject(auth)) {
       var username = auth.username || '';
       var password = auth.password || '';
       auth = username + ':' + password;
     }
-    if (!auth && parsed.auth) {
-      var urlAuth = parsed.auth.split(':');
-      var urlUsername = urlAuth[0] || '';
-      var urlPassword = urlAuth[1] || '';
-      auth = urlUsername + ':' + urlPassword;
+
+    // 如果是正常的url地址
+    if (isAbsolute(url)) {
+      // Parse url
+      parsed = new URL(url);
+
+      url = parsed.pathname + parsed.search;
+
+      // 重新设置网络协议
+      protocol = parsed.protocol;
+
+      if (!auth) {
+        auth = parsed.auth;
+      }
+
+      host = parsed.hostname;
+      port = parsed.port;
     }
+
+    var isHttpsRequest = RHTTPS.test(protocol);
+    var defaultHttp = http;
+    var defaultPort = 80;
+    if (isHttpsRequest) {
+      defaultHttp = https;
+      defaultPort = 443;
+    }
+
+    var httpOptions = {
+      protocol: protocol,
+      method: method,
+      headers: headers,
+      agent: agent,
+      path: url
+    };
+
     if (auth) {
       delete headers.Authorization;
       httpOptions.auth = auth;
@@ -150,98 +188,183 @@ function http$1 (options) {
     if (socketPath) {
       httpOptions.socketPath = socketPath;
     } else {
-      httpOptions.host = parsed.hostname;
-      httpOptions.port = parsed.port || 80;
+      httpOptions.host = host;
+      httpOptions.port = port || defaultPort;
+    }
+
+    if (family) {
+      httpOptions.family = family;
+    }
+
+    if (localAddress) {
+      httpOptions.localAddress = localAddress;
     }
 
     if (timeout) {
       httpOptions.timeout = timeout;
     }
 
-    var chunks = [];
-    var contentLength = 0;
-    var error;
-    var abortedToken;
+    if (createConnection) {
+      httpOptions.createConnection = createConnection;
+    }
 
-    var req = http.request(httpOptions, function (res) {
-      // 主动中断请求
-      abortedToken = push(function (e) {
-        error = e;
-        req.abort();
+    if (setHost === false) {
+      httpOptions.setHost = setHost;
+    }
+
+    // 请求之前触发
+    this.emit('beforeRequest', httpOptions, options);
+
+    var chunks = []; // buffer数组
+    var contentLength = 0; // 接收到的内容长度
+    var iRes = null; // 内部response对象
+    var isAborted = false;
+
+    var req = defaultHttp.request(httpOptions, function (res) {
+      iRes = res;
+
+      // 刚发起request请求
+      this$1.emit('response', req, res, httpOptions, options);
+
+      // 响应之后才触发 req.abort()
+      res.on('aborted', function () {
+        isAborted = true;
+        this$1.emit('abort', null, req, res, httpOptions, options);
       });
-      if (isFunction(abortion)) {
-        abortion(abortedToken);
-      }
 
+      // 接收数据
       res.on('data', function (chunk) {
         contentLength += chunk.length;
-        chunks.append(chunk);
+        append$1(chunks, chunk);
       });
-      res.on('end', function () {
-        // buffer
-        var body = Buffer.concat(chunks, contentLength);
 
-        if (error) {
-          reject(Object.assign(error, {
-            options: options,
-            request: req
-          }));
+      // 数据接收完成
+      res.on('end', function () {
+        // 中途出现异常或者被中断请求，就不继续往下执行
+        if (error || isAborted) {
           error = null;
+          isAborted = false;
           return;
         }
 
-        var response = {
-          statusText: res.statusMessage,
-          options: options,
-          request: req,
-          status: res.statusCode,
-          headers: res.headers
-        };
+        // buffer
+        var body = Buffer.concat(chunks, contentLength);
+
+        this$1.emit('received', body, req, res, httpOptions, options);
 
         decodeResponseBody(res, body, function (err, buf) {
           if (err) {
-            reject(Object.assign(err, response));
-          } else {
-            switch (responseType) {
-              case 'json':
-                response.data = parseJSON(buf, responseEncoding);
-                break;
-              case 'text':
-                response.data = buf.toString(responseEncoding);
-                break;
-              case 'arraybuffer':
-                response.data = buf;
-                break;
-              default:
-                var contentType = res.headers['content-type'];
-                if (contentType.startsWith('application/json')) {
-                  response.data = parseJSON(buf, responseEncoding);
-                } else if (contentType.startsWith('text')) {
-                  response.data = buf.toString(responseEncoding);
-                } else {
-                  response.data = buf;
-                }
-            }
-            resolve(response);
+            // unzip 异常
+            this$1.emit('error', err, req, res, httpOptions, options);
           }
+
+          switch (responseType) {
+            case 'json':
+              body = parseJSON(buf, responseEncoding);
+              break;
+            case 'text':
+              body = buf.toString(responseEncoding);
+              break;
+            case 'arraybuffer':
+              body = buf;
+              break;
+            default:
+              var contentType = res.headers['content-type'];
+              if (contentType.startsWith('application/json')) {
+                body = parseJSON(buf, responseEncoding);
+              } else if (contentType.startsWith('text')) {
+                body = buf.toString(responseEncoding);
+              } else {
+                body = buf;
+              }
+          }
+
+          this$1.emit('end', body, req, res, httpOptions, options);
         });
       });
     });
 
+    // 请求了之后触发
+    this.emit('request', req, iRes, httpOptions, options);
+
+    // req.abort() 触发
+    req.on('abort', function () {
+      isAborted = true;
+    });
+
+    // 监听异常
     req.on('error', function (e) {
       error = e;
-      reject(Object.assign(error, {
-        options: options,
-        request: req
-      }));
-      error = null;
+      this$1.emit(isAborted && e.code === 'ECONNRESET' ? 'abort' : 'error', e, req, iRes, httpOptions);
+    });
+
+    // 关闭连接
+    req.on('close', function () {
+      this$1.emit('close', req, iRes, httpOptions);
     });
 
     // 处理post请求
     if (data) {
       req.write(data);
     }
+
+    // end后才会发起请求
     req.end();
+
+    return this;
+  };
+
+  return Request;
+}(EventEmitter));
+
+var ECONNABORTED = 'ECONNABORTED';
+
+function http$1 (options) {
+  return new Promise(function (resolve, reject) {
+    var _abortion = options._abortion;
+
+    var request = new Request();
+    request
+      .on('beforeRequest', function () {
+        if (_abortion.state) {
+          reject(Object.assign(_abortion.error, {
+            options: options
+          }));
+          _abortion.remove();
+        }
+      })
+      .on('request', function (req) {
+        // 添加中断请求函数
+        _abortion.push(function () { return req.abort(); });
+      })
+      .on('error', function (err, req) {
+        reject(Object.assign(err, {
+          options: options,
+          request: req
+        }));
+        _abortion.remove();
+      })
+      .on('abort', function (err, req) {
+        reject(Object.assign(_abortion.error || err, {
+          options: options,
+          request: req,
+          code: ECONNABORTED
+        }));
+        _abortion.remove();
+      })
+      .on('end', function (body, req, res) {
+        var response = {
+          data: body,
+          statusText: res.statusMessage,
+          options: options,
+          request: req,
+          status: res.statusCode,
+          headers: res.headers
+        };
+        _abortion.state ? reject(Object.assign(_abortion.error, response)) : resolve(response);
+        _abortion.remove();
+      })
+      .request(options);
 
   });
 }
@@ -252,7 +375,7 @@ function isStandardNodeEnv() {
   return process && toString.call(process) === '[object process]';
 }
 
-function plugin(ref) {
+function plugin(ref, $http) {
   var defaults = ref.defaults;
 
   if (isStandardNodeEnv()) {
@@ -261,6 +384,6 @@ function plugin(ref) {
   }
 }
 
-plugin.request = http$1;
+plugin.Request = Request;
 
 module.exports = plugin;

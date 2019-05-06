@@ -1,5 +1,5 @@
 /*!
- * tammy.js v1.0.0-beta.9
+ * tammy.js v1.0.0
  * (c) 2018-2019 Jesse Feng
  * Released under the MIT License.
  */
@@ -12,45 +12,36 @@ function isObject (value) {
   return !isNil(value) && typeof value === 'object';
 }
 
+function isString (value) {
+  return typeof value === 'string';
+}
+
+function isFunction (value) {
+  return typeof value === 'function';
+}
+
 function iteratorCallback (iterator, context) {
   return context ? iterator.bind(context) : iterator;
 }
 
-function forSlice (value, start, end, iterator, context) {
+function _for (handler, value, iterator, context) {
   var cb = iteratorCallback(iterator, context);
-  for (var i = start, returnValue = (void 0); returnValue !== false && i < end; i++) {
-    returnValue = cb(value[i], i, value);
-  }
+  for (var key in value) {
+    if (handler(cb, value[key], key)) {
+      break;
+    }  }
 }
 
 function forOwn (value, iterator, context) {
-  var cb = iteratorCallback(iterator, context);
-  for (var key in value) {
-    if (value.hasOwnProperty(key) && cb(value[key], key, value) === false) {
-      break;
-    }  }
+  _for(
+    function (cb, val, key) { return value.hasOwnProperty(key) && cb(val, key, value) === false; },
+    value, iterator, context
+  );
 }
 
 function forOwn$1 (value, iterator, context) {
   return isObject(value) && forOwn(value, iterator, context);
 }
-
-var assign = Object.assign || function (target) {
-  if (isNil(target)) {
-    throw new TypeError('Cannot convert undefined or null to object');
-  }
-
-  var to = Object(target);
-
-  forSlice(arguments, 1, arguments.length, function (nextSource) {
-
-    forOwn$1(nextSource, function (nextVal, nextKey) {
-      to[nextKey] = nextVal;
-    });
-
-  });
-  return to;
-};
 
 function append (arr, obj) {
   arr[arr.length] = obj;
@@ -75,18 +66,26 @@ function isAbsolute (url) {
   return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
 }
 
+function forSlice (value, start, end, iterator, context) {
+  var cb = iteratorCallback(iterator, context);
+  for (var i = start, returnValue = (void 0); returnValue !== false && i < end; i++) {
+    returnValue = cb(value[i], i, value);
+  }
+}
+
 function joinURLs (baseURL) {
-  var args = arguments;
-  var len = args.length;
+  var len = arguments.length;
   if (!isNil(baseURL)) {
     baseURL = baseURL.replace(/\/+$/, '');
   } else if (len > 1) {
     baseURL = '';
   }
   var str = '';
-  forSlice(args, 1, len, function (arg) {
-    str += '/';
-    str += arg || '';
+  forSlice(arguments, 1, len, function (arg) {
+    if (arg) {
+      str += '/';
+      str += arg;
+    }
   });
   if (str) {
     baseURL += str.replace(/\/+/g, '/');
@@ -94,27 +93,22 @@ function joinURLs (baseURL) {
   return baseURL;
 }
 
-function checkProto(proto, name) {
-  if (name in proto) {
-    name = 'c$' + name;
+var assign = Object.assign || function (target) {
+  if (isNil(target)) {
+    throw new TypeError('Cannot convert undefined or null to object');
   }
-  return name;
-}
 
-var arrayProto = Array.prototype;
+  var to = Object(target);
 
-function defineArrayProto (name, val) {
-  name = checkProto(arrayProto, name);
-  arrayProto[name] = val;
-}
+  forSlice(arguments, 1, arguments.length, function (nextSource) {
 
-defineArrayProto('append', function (value) {
-  return append(this, value);
-});
+    forOwn$1(nextSource, function (nextVal, nextKey) {
+      to[nextKey] = nextVal;
+    });
 
-function isFunction (value) {
-  return typeof value === 'function';
-}
+  });
+  return to;
+};
 
 function max(a, b) {
   return a >= b ? a : b;
@@ -143,6 +137,14 @@ function forSlice$2 (value, start, end, iterator, context) {
   }
 }
 
+function append$1 (arr, obj) {
+  if (arr) {
+    append(arr, obj);
+    return obj;
+  }
+  return arr;
+}
+
 function removeAt (elems, index) {
   return elems.splice(index, 1)[0] || null;
 }
@@ -154,12 +156,6 @@ function removeAt$1 (elems, index) {
   }
   return null;
 }
-
-var CONTENT_TYPE = 'Content-Type';
-var ECONNRESET = 'ECONNRESET';
-var ECONNABORTED = 'ECONNABORTED';
-// export const ETIMEDOUT = 'ETIMEDOUT';
-var ENETWORK = 'ENETWORK';
 
 /**
  * 深度合并
@@ -192,6 +188,52 @@ function assignDeep(result) {
 }
 
 /**
+ * 对象转表单字符串
+ * @param {Object} obj
+ */
+function formify(obj) {
+  var form = [];
+  forOwn$1(obj, function (val, key) {
+    append$1(form, (key + "=" + val));
+  });
+  return form.join('&');
+}
+
+/**
+ * 拼接querystring
+ * @param {String} url
+ * @param {String} qs
+ */
+function joinQS(url, qs) {
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
+}
+
+var util = ({
+  isNil: isNil,
+  isString: isString,
+  isObject: isObject,
+  isFunction: isFunction,
+  forOwn: forOwn$1,
+  assign: assign,
+  forSlice: forSlice$2,
+  append: append$1,
+  removeAt: removeAt$1,
+  stringify: stringify,
+  isAbsolute: isAbsolute,
+  joinURLs: joinURLs,
+  mergeDeep: mergeDeep,
+  assignDeep: assignDeep,
+  formify: formify,
+  joinQS: joinQS
+});
+
+var CONTENT_TYPE = 'Content-Type';
+var ECONNRESET = 'ECONNRESET';
+var ECONNABORTED = 'ECONNABORTED';
+// export const ETIMEDOUT = 'ETIMEDOUT';
+var ENETWORK = 'ENETWORK';
+
+/**
  * 创建异常
  * @param {String} message
  * @param {Object} options
@@ -200,18 +242,6 @@ function createError(message, options) {
   var error = new Error(message);
   assign(error, options);
   return error;
-}
-
-/**
- * 对象转表单字符串
- * @param {Object} obj
- */
-function toFormString(obj) {
-  var form = [];
-  forOwn$1(obj, function (val, key) {
-    form.append((key + "=" + val));
-  });
-  return form.join('&');
 }
 
 /**
@@ -225,15 +255,6 @@ function preloadHooks(promise) {
     });
   });
   return promise;
-}
-
-/**
- * 拼接querystring
- * @param {String} url
- * @param {String} qs
- */
-function joinQS(url, qs) {
-  return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
 }
 
 var RCACHE = /([?&]_=)[^&]*/;
@@ -260,7 +281,7 @@ var logErr = (console && console.error) || function () { };
  */
 function interceptor(arr) {
   arr.use = function (fulfilled, rejected) {
-    return arr.append({ fulfilled: fulfilled, rejected: rejected });
+    return append$1(arr, { fulfilled: fulfilled, rejected: rejected });
   };
   arr.eject = function (index) {
     removeAt$1(index);
@@ -296,10 +317,26 @@ function createTimedoutError(timeout, options) {
  */
 function createNetworkError(message, options) {
   options.code = ENETWORK;
-  return createError(message || 'Network Error');
+  return createError(message || 'Network Error', options);
 }
 
-var CONTENT_TYPE$1 = 'Content-Type';
+/**
+ * 创建主动中断请求异常
+ * @param {String} message
+ * @param {Object} options
+ */
+function createAbortedError(message, options) {
+  options.code = ECONNABORTED;
+  return createError(message || 'Request aborted', options);
+}
+
+/**
+ * 是否是主动中断请求异常
+ * @param {Error} e
+ */
+function isAborted(e) {
+  return e && e.code === ECONNABORTED;
+}
 
 function request(options) {
   var url = options.url;
@@ -327,12 +364,12 @@ function request(options) {
       break;
     case 'POST':
       // 校验post数据格式
-      var ctype = headers[CONTENT_TYPE$1] || '';
+      var ctype = headers[CONTENT_TYPE] || '';
       if (isObject(data)) {
         if (!ctype.indexOf('application/json')) {
           data = JSON.stringify(data);
         } else {
-          data = toFormString(data);
+          data = formify(data);
         }
         options.data = data;
       }
@@ -380,60 +417,6 @@ var defaults = {
   }
 };
 
-function isString (value) {
-  return typeof value === 'string';
-}
-
-var MESSAGE = 'Request aborted';
-var managers = {};
-
-function uuid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function buildError(anything) {
-  var options = {};
-  if (!anything) {
-    anything = MESSAGE;
-  } else if (isObject(anything)) {
-    options = anything;
-    anything = anything.message || MESSAGE;
-  }
-  options.code = ECONNABORTED;
-  return createError(anything, options);
-}
-
-function abort(token, anything, ctx) {
-  var fn = managers[token];
-  fn(buildError(anything));
-  delete managers[token];
-  return ctx;
-}
-
-function abortAll(anything, ctx) {
-  forOwn$1(managers, function (fn, token) {
-    fn(buildError(anything));
-    delete managers[token];
-  });
-  return ctx;
-}
-
-function push(fn) {
-  var token = uuid();
-  managers[token] = fn;
-  return token;
-}
-
-function isAborted(e) {
-  return e && e.code === ECONNABORTED;
-}
-
-function clearAbortions(abortedToken) {
-  if (abortedToken) {
-    delete managers[abortedToken];
-  }
-}
-
 function xhr (options) {
   return new Promise(function (resolve, reject) {
     var method = options.method;
@@ -444,17 +427,13 @@ function xhr (options) {
     var responseType = options.responseType;
     var onDownloadProgress = options.onDownloadProgress;
     var onUploadProgress = options.onUploadProgress;
-    var abortion = options.abortion;
-
-    var abortedError;
-    var abortedToken;
+    var _abortion = options._abortion;
 
     // 异步请求对象
     var request = new window.XMLHttpRequest();
 
     var gc = function () {
-      abortedError = null;
-      abortedToken = null;
+      _abortion.remove();
       request = null;
     };
 
@@ -470,11 +449,8 @@ function xhr (options) {
         return;
       }
 
-      clearAbortions(abortedToken);
-
       var status = request.status;
       var responseURL = request.responseURL;
-      var responseText = request.responseText;
 
       // 状态为0，或者没有内容返回
       if (status === 0 && !(responseURL && responseURL.indexOf('file:') === 0)) {
@@ -482,7 +458,7 @@ function xhr (options) {
       }
 
       // 处理响应
-      var responseData = (!responseType || responseType === 'text') ? request : (request.response || responseText);
+      var responseData = (!responseType || responseType === 'text') ? request : (request.response || request.responseText);
       var response = {
         data: responseData,
         statusText: request.statusText,
@@ -509,32 +485,21 @@ function xhr (options) {
     };
 
     // 监听请求中断
-    request.onabort = function () {
-      if (!request) {
-        return;
-      }
-      reject(assign(abortedError, {
-        options: options,
-        request: request
-      }));
+    // request.onabort = function () {
+    //   if (!request) {
+    //     return;
+    //   }
+    //   reject(assign(_abortion.error, {
+    //     options,
+    //     request
+    //   }));
 
-      // 垃圾回收
-      clearAbortions(abortedToken);
-      gc();
-    };
-
-    // 主动中断请求
-    abortedToken = push(function (error) {
-      abortedError = error;
-      request && request.abort();
-    });
-    if (isFunction(abortion)) {
-      abortion(abortedToken);
-    }
+    //   // 垃圾回收
+    //   gc();
+    // };
 
     // 监听网络错误
     request.onerror = function () {
-      clearAbortions(abortedToken);
       reject(createNetworkError(null, {
         options: options,
         request: request
@@ -546,7 +511,6 @@ function xhr (options) {
 
     // 监听超时处理
     request.ontimeout = function () {
-      clearAbortions(abortedToken);
       reject(createTimedoutError(timeout, {
         options: options,
         request: request
@@ -594,13 +558,24 @@ function xhr (options) {
     // 发送数据到服务端
     request.send(data || null);
 
+    // 添加中断请求函数
+    _abortion.push(function () {
+      reject(assign(_abortion.error, {
+        options: options,
+        request: request
+      }));
+      request && request.abort();
+      // 垃圾回收
+      gc();
+    });
+
   });
 }
 
 var CONTENT_TYPES = {
-  json: 'application/json; charset=UTF-8',
-  form: 'application/x-www-form-urlencoded; charset=UTF-8',
-  'form-data': 'multipart/form-data; charset=UTF-8'
+  json: 'application/json; charset=utf-8',
+  form: 'application/x-www-form-urlencoded; charset=utf-8',
+  'form-data': 'multipart/form-data; charset=utf-8'
 };
 
 var DEFAULT_POST_HEADERS = {
@@ -652,6 +627,82 @@ function transformContentType(contentType) {
   return contentType && CONTENT_TYPES[contentType];
 }
 
+var abortions = {};
+
+function uuid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function buildError(anything) {
+  var options = {};
+  if (isObject(anything)) {
+    options = anything;
+    anything = '';
+  }
+  return createAbortedError(anything, options);
+}
+
+var Abortion = function Abortion() {
+  this.id = uuid();
+  this.state = 0;
+};
+
+Abortion.prototype.abort = function abort (err) {
+  var ref = this;
+    var state = ref.state;
+  this.state = 1;
+  this.error = err;
+  if (!state) {
+    var ref$1 = this;
+      var _abort = ref$1._abort;
+    if (_abort) {
+      _abort();
+      delete this._abort;
+    }
+  }
+  this.remove();
+};
+
+Abortion.prototype.push = function push (fn) {
+  if (this.state) {
+    fn();
+  } else {
+    this._abort = fn;
+  }
+  return this;
+};
+
+Abortion.prototype.remove = function remove () {
+  delete abortions[this.id];
+};
+
+function get(token) {
+  if (token) {
+    return abortions[token];
+  }
+  var abortion = new Abortion();
+  abortions[abortion.id] = abortion;
+  return abortion;
+}
+
+function abort(token, anything) {
+  if (token) {
+    var abortion = abortions[token];
+    if (abortion) {
+      abortion.abort(buildError(anything));
+      delete abortions[token];
+    }
+  }
+}
+
+function abortAll(anything) {
+  var err = buildError(anything);
+  forOwn$1(abortions, function (abortion, token) {
+    abortion.abort(err);
+    delete abortions[token];
+  });
+}
+
 // 默认为客户端请求
 defaults.adapter = xhr;
 
@@ -681,6 +732,7 @@ Tammy.prototype.request = function request$1$1 (opts) {
   var method = opts.method;
     var headers = opts.headers;
     var contentType = opts.contentType;
+    var abortion = opts.abortion;
   method = opts.method = method ? method.toUpperCase() : 'GET';
 
   // 合并headers
@@ -688,6 +740,11 @@ Tammy.prototype.request = function request$1$1 (opts) {
   var ctype;
   if ((ctype = transformContentType(contentType))) {
     headers[CONTENT_TYPE] = ctype;
+  }
+
+  var _abortion = opts._abortion = get();
+  if (isFunction(abortion)) {
+    abortion(_abortion.id);
   }
 
   return request$1(opts, this.internalHooks, this.interceptors);
@@ -701,6 +758,10 @@ Tammy.prototype.request = function request$1$1 (opts) {
  */
 Tammy.prototype.setHeader = setHeader;
 
+var mergeDeep$1 = mergeDeep;
+var isObject$1 = isObject;
+var assign$1 = assign;
+
 function createInstance(options) {
   var tammy = new Tammy(options);
 
@@ -710,7 +771,7 @@ function createInstance(options) {
    * @param {Object|undefined} opts
    */
   var $http = function (url, opts) {
-    if (isObject(url)) {
+    if (isObject$1(url)) {
       opts = url;
       url = opts.url;
     } else {
@@ -720,7 +781,7 @@ function createInstance(options) {
     return tammy.request(opts);
   };
 
-  assign($http, {
+  assign$1($http, {
     /**
      * 挂载全局钩子
      * @param {Function} fn
@@ -760,7 +821,8 @@ function createInstance(options) {
      * @param {String} anything
      */
     abort: function abort$1(token, anything) {
-      return abort(token, anything, $http);
+      abort(token, anything);
+      return $http;
     },
 
     /**
@@ -768,13 +830,19 @@ function createInstance(options) {
      * @param {String} anything
      */
     abortAll: function abortAll$1(anything) {
-      return abortAll(anything, $http);
-    }
+      abortAll(anything);
+      return $http;
+    },
+
+    /**
+     * 常用方法
+     */
+    util: util
   });
 
   ['get', 'delete', 'head', 'options', 'post', 'put', 'patch'].forEach(function (method) {
     $http[method] = function (url, data, options) {
-      return $http(url, mergeDeep({ method: method, data: data }, options));
+      return $http(url, mergeDeep$1({ method: method, data: data }, options));
     };
   });
 
