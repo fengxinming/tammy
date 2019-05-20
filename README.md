@@ -4,6 +4,8 @@
 
 > Note: The progressive HTTP client for the browser and node.js
 
+[![NPM version](https://img.shields.io/npm/v/tammy.svg?style=flat)](https://npmjs.org/package/tammy) [![NPM Downloads](https://img.shields.io/npm/dm/tammy.svg?style=flat)](https://npmjs.org/package/tammy)
+
 ---
 
 ## Table of contents
