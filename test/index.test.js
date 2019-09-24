@@ -58,8 +58,8 @@ describe('测试 tammy', () => {
     await tammy(url, {
       qs: 'aa=aa&bb=bb',
       cache: false
-    }).then(({ options }) => {
-      expect(options.url.match(/[?&]_=[^&]*/g).length).toBe(1);
+    }).then(({ config }) => {
+      expect(config.url.match(/[?&]_=[^&]*/g).length).toBe(1);
     });
   });
 
@@ -162,38 +162,44 @@ describe('测试 tammy', () => {
   });
 
   it('测试拦截器', async () => {
-    newTammy.use(({ interceptors }) => {
-      interceptors.request.use((options) => {
-        options.headers = { 'X-SB-X': 'SB' };
-        return options;
-      });
-      interceptors.response.use((res) => {
-        const { options } = res;
-        expect(options.headers['X-SB-X']).toBe('SB');
-        return res;
-      });
+    const { request, response } = newTammy.interceptors;
+
+    request.use((config) => {
+      config.headers = { 'X-SB-X': 'SB' };
+      return config;
     });
+    response.use((res) => {
+      const { config } = res;
+      expect(config.headers['X-SB-X']).toBe('SB');
+      expect(config.headers['X-SB-B']).toBe(undefined);
+      return res;
+    });
+    const id = request.use((config) => {
+      config.headers = { 'X-SB-B': 'S' };
+      return config;
+    });
+    request.eject(id);
+    request.eject(1);
+    request.eject();
     await newTammy(url);
   });
 
   it('测试设置请求头', async () => {
-    tammy.use(({ setHeader }) => {
-      setHeader('X-SB', 'SB');
-      setHeader('Content-Type', '');
-      setHeader('Content-Type', 'json', 'post');
-      setHeader('Content-Type', 'form', 'aaa');
-    });
+    tammy.headers.common['X-SB'] = 'SB';
+    tammy.headers.common['Content-Type'] = '';
+    tammy.headers.post['Content-Type'] = 'json';
   });
 
   it('测试终止请求', async () => {
     let token;
     setTimeout(() => {
-      tammy.abort(token, '测试终止请求');
+      tammy.cancel(token, '测试终止请求');
+      tammy.cancel();
     }, 100);
     try {
       await tammy({
         url,
-        abortion(t) {
+        cancelToken(t) {
           token = t;
         },
         method: 'POST',
@@ -204,18 +210,18 @@ describe('测试 tammy', () => {
         }
       });
     } catch (e) {
-      expect(tammy.isAborted(e)).toBe(true);
+      expect(tammy.isCancelled(e)).toBe(true);
     }
 
     await sleep(100);
 
     setTimeout(() => {
-      tammy.abort(token);
+      tammy.cancel(token);
     }, 100);
     try {
       await tammy({
         url,
-        abortion(t) {
+        cancelToken(t) {
           token = t;
         },
         method: 'POST',
@@ -226,18 +232,18 @@ describe('测试 tammy', () => {
         }
       });
     } catch (e) {
-      expect(e.message).toBe('Request aborted');
+      expect(e.message).toBe('Request cancelled');
     }
 
     await sleep(100);
 
     setTimeout(() => {
-      tammy.abort(token, {});
+      tammy.cancel(token, {});
     }, 100);
     try {
       await tammy({
         url,
-        abortion(t) {
+        cancelToken(t) {
           token = t;
         },
         method: 'POST',
@@ -248,18 +254,18 @@ describe('测试 tammy', () => {
         }
       });
     } catch (e) {
-      expect(e.message).toBe('Request aborted');
+      expect(e.message).toBe('Request cancelled');
     }
 
     await sleep(100);
 
     setTimeout(() => {
-      tammy.abortAll({ message: '测试终止请求2' });
+      tammy.cancelAll({ message: '测试终止请求2' });
     }, 100);
 
     await expect(tammy.all([{
       url,
-      abortion(t) {
+      cancelToken(t) {
         token = t;
       },
       method: 'POST',
@@ -270,7 +276,7 @@ describe('测试 tammy', () => {
       }
     }, {
       url,
-      abortion(t) {
+      cancelToken(t) {
         token = t;
       },
       method: 'POST',
@@ -352,6 +358,46 @@ describe('测试 tammy', () => {
     } catch (e) {
       expect(e.message).toBe('Request failed with status code 200');
     }
+  });
+
+  it('测试auth认证', async () => {
+    await tammy({
+      method: 'POST',
+      url,
+      auth: {
+        username: 'abc',
+        password: '123'
+      }
+    }).then(({ config }) => {
+      expect(config.headers.Authorization).toBe('Basic YWJjOjEyMw==');
+    });
+
+    await tammy({
+      method: 'POST',
+      url,
+      auth: {
+        username: null,
+        password: null
+      }
+    }).then(({ config }) => {
+      expect(config.headers.Authorization).toBe('Basic Og==');
+    });
+  });
+
+  it('测试处理headers', async () => {
+    await tammy({
+      url,
+      headers: {
+        'Content-Type': ''
+      },
+      method: 'POST'
+    }).then(({ headers }) => {
+      expect(headers).toEqual(
+        expect.objectContaining({
+          'content-type': 'application/json;charset=utf-8'
+        })
+      );
+    });
   });
 
   afterAll(() => {

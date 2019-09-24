@@ -9,7 +9,9 @@
     "test": true,
     "expect": true,
     "beforeAll": true,
-    "afterAll": true
+    "afterAll": true,
+    "XMLHttpRequest": true,
+    "btoa": true
   },
   "rules": {
     "arrow-parens": [

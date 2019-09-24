@@ -1,34 +1,64 @@
-import { forOwn, isNil, isString, assign, isFunction } from './util';
-import { logErr, createNetworkError, createTimedoutError, createStatusError } from './helper';
-import { CONTENT_TYPE } from './constants';
+import { forOwn, isNil, isString, isObject, isFunction, createError } from './util';
+import { ECONNRESET, ENETWORK, ECONNABORTED, EREQCANCELLED, CONTENT_TYPE } from './constants';
 
-export default function (options) {
+const rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
+const logErr = (console && console.error) || function () { };
+
+/**
+ * 解析 response headers
+ * @param {XMLHttpRequest} request
+ * @param {Object} response
+ */
+function parseRawHeaders(request, response) {
+  Object.defineProperty(response, 'headers', {
+    get() {
+      if (!this._headers) {
+        if (request && request.getAllResponseHeaders) {
+          const rawHeaders = request.getAllResponseHeaders();
+          const parsedHeaders = {};
+          let match;
+          while ((match = rheaders.exec(rawHeaders))) {
+            parsedHeaders[match[1].toLowerCase()] = match[2];
+          }
+          this._headers = parsedHeaders;
+        }
+      }
+      return this._headers;
+    }
+  });
+}
+
+export default function (config) {
   return new Promise((resolve, reject) => {
     const {
       method,
       url,
       data,
+      headers,
+      auth,
       async,
       timeout,
       responseType,
+      cancelToken,
       onDownloadProgress,
-      onUploadProgress,
-      _abortion
-    } = options;
+      onUploadProgress
+    } = config;
+
+    // HTTP basic authentication
+    if (auth) {
+      const username = auth.username || '';
+      const password = auth.password || '';
+      headers.Authorization = 'Basic ' + btoa(username + ':' + password);
+    }
 
     // 异步请求对象
-    let request = new window.XMLHttpRequest();
-
-    const gc = () => {
-      _abortion.remove();
-      request = null;
-    };
+    let request = new XMLHttpRequest();
 
     // 建立连接
     request.open(method, url, async !== false);
 
     // 设置超时毫秒数
-    request.timeout = timeout || 0;
+    request.timeout = timeout;
 
     // 监听异步返回状态
     request.onreadystatechange = function () {
@@ -48,12 +78,14 @@ export default function (options) {
       const response = {
         data: responseData,
         statusText: request.statusText,
-        options,
-        request,
-        status
+        status,
+        config,
+        request
       };
 
-      if (options.validateStatus(status)) {
+      parseRawHeaders(request, response);
+
+      if (config.validateStatus(status)) {
         if (responseType === 'json' && isString(responseData)) {
           try {
             response.data = JSON.parse(responseData);
@@ -63,51 +95,52 @@ export default function (options) {
         }
         resolve(response);
       } else {
-        reject(createStatusError(status, response));
+        reject(createError(`Request failed with status code ${status}`, {
+          code: status
+        }));
       }
 
-      // 垃圾回收
-      gc();
+      request = null;
     };
 
     // 监听请求中断
-    // request.onabort = function () {
-    //   if (!request) {
-    //     return;
-    //   }
-    //   reject(assign(_abortion.error, {
-    //     options,
-    //     request
-    //   }));
+    request.onabort = function () {
+      if (!request) {
+        return;
+      }
 
-    //   // 垃圾回收
-    //   gc();
-    // };
+      createError('Request aborted', {
+        code: ECONNABORTED,
+        config,
+        request
+      });
+
+      request = null;
+    };
 
     // 监听网络错误
     request.onerror = function () {
-      reject(createNetworkError(null, {
-        options,
+      reject(createError('Network Error', {
+        code: ENETWORK,
+        config,
         request
       }));
 
-      // 垃圾回收
-      gc();
+      request = null;
     };
 
     // 监听超时处理
     request.ontimeout = function () {
-      reject(createTimedoutError(timeout, {
-        options,
+      reject(createError(`Timeout of ${timeout}ms exceeded`, {
+        code: ECONNRESET,
+        config,
         request
       }));
 
-      // 垃圾回收
-      gc();
+      request = null;
     };
 
     // 增加 headers
-    const { headers } = options;
     if (isFunction(request.setRequestHeader)) {
       forOwn(headers, (val, key) => {
         if (isNil(data) && key === CONTENT_TYPE) {
@@ -120,7 +153,7 @@ export default function (options) {
     }
 
     // 设置跨域
-    if (options.withCredentials) {
+    if (config.withCredentials) {
       request.withCredentials = true;
     }
 
@@ -141,19 +174,29 @@ export default function (options) {
       request.upload.addEventListener('progress', onUploadProgress);
     }
 
-    // 发送数据到服务端
-    request.send(data || null);
+    cancelToken.subscribe((meta) => {
+      if (!request) {
+        return;
+      }
 
-    // 添加中断请求函数
-    _abortion.push(() => {
-      reject(assign(_abortion.error, {
-        options,
-        request
-      }));
-      request && request.abort();
-      // 垃圾回收
-      gc();
+      let message;
+      let response = { config, request, code: EREQCANCELLED };
+      if (isObject(meta)) {
+        forOwn(meta, (v, k) => {
+          response[k] = v;
+        });
+        message = meta.message;
+      } else {
+        message = meta;
+      }
+
+      request.abort();
+      reject(createError(message || 'Request cancelled', response));
+      request = null;
     });
+
+    // 发送数据到服务端
+    request.send(data === undefined ? null : data);
 
   });
 }

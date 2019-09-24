@@ -16,7 +16,8 @@ describe('测试 xsrf', () => {
   });
 
   it('测试xsrf', async () => {
-    tammy.use(xsrf);
+    tammy.install(xsrf);
+    tammy.install(xsrf);
 
     await tammy({
       method: 'POST',

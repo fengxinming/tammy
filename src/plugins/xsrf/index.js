@@ -1,9 +1,9 @@
 import cookies from './cookies';
 import { isStandardBrowserEnv, isURLSameOrigin } from './util';
 
-export default function ({ internalHooks }) {
+export default function ({ interceptors }) {
   if (window && window.window === window) {
-    internalHooks.request.use((options) => {
+    interceptors.request.use((options) => {
       const {
         url,
         headers,

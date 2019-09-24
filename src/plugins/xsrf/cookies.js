@@ -38,7 +38,7 @@ if (isStandardBrowserEnv) {
   };
 
   cookies.remove = function remove(name) {
-    this.write(name, '', Date.now() - 86400000);
+    this.set(name, '', Date.now() - 86400000);
   };
 }
 

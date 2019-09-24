@@ -1,15 +1,17 @@
 'use strict';
 
-const { resolve, DIST_FILENAME } = require('../_util');
+const { resolve, releaseDir } = require('../util');
+const pkg = require('../../package.json');
 
 function configure(input, output) {
   return {
     isProd: true,
     inputOptions: {
-      input: resolve(input)
+      input
     },
     outputOptions: {
-      file: resolve(output),
+      name: pkg.name,
+      file: output,
       format: 'umd',
       legacy: false,
       esModule: false
@@ -18,6 +20,5 @@ function configure(input, output) {
 }
 
 module.exports = [
-  configure('src/index.js', `dist/${DIST_FILENAME}.js`),
-  configure('src/browser.js', `dist/${DIST_FILENAME}.browser.js`)
+  configure(resolve('src/index.js'), releaseDir(pkg.name + '.js'))
 ];

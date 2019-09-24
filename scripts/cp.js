@@ -1,33 +1,20 @@
 'use strict';
 
-const { readdirSync, existsSync, mkdirSync } = require('fs');
-const { join } = require('path');
-const { exec } = require('child_process');
-const { getLogger } = require('clrsole');
-const { resolve } = require('./_util');
+const { promisify } = require('util');
+const { existsSync, mkdirSync } = require('fs');
+const { copy } = require('fs-extra');
+const { resolve, releaseDir } = require('./util');
 
-const logger = getLogger('celia');
-
-function copyFile(command) {
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      logger.error(error);
-      throw error;
-    }
-    stdout && logger.info(stdout);
-    stderr && logger.warn(stderr);
-  });
-}
+const copify = promisify(copy);
 
 module.exports = () => {
-  const distDir = resolve('dist');
+  const distDir = releaseDir();
   if (!existsSync(distDir)) {
     mkdirSync(distDir);
   }
-  copyFile(`cp ${resolve('package.json')} ${resolve('dist/package.json')}`);
-  copyFile(`cp ${resolve('README.md')} ${resolve('dist/README.md')}`);
-  const src = resolve('src');
-  readdirSync(src).forEach((file) => {
-    copyFile(`cp -r ${join(src, file)} ${join(distDir, file)}`);
-  });
+  return Promise.all([
+    copify(resolve('package.json'), releaseDir('package.json')),
+    copify(resolve('README.md'), releaseDir('README.md'))
+    // copify(resolve('src'), releaseDir('es'))
+  ]);
 };

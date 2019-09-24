@@ -1,17 +1,20 @@
 'use strict';
 
-const { matches } = require('corie-utils');
-const { resolve, sourceDir, DIST_FILENAME } = require('../_util');
+const { resolve, releaseDir } = require('../util');
+const pkg = require('../../package.json');
 
 function configure(input, output) {
-  const isDIR = input.indexOf('*') > -1;
+  const isDIR = Array.isArray(input);
   return {
     inputOptions: {
-      input: isDIR ? matches(resolve(input)) : resolve(input)
+      input,
+      external: (id) => {
+        return /^celia/.test(id);
+      }
     },
     outputOptions: {
-      dir: isDIR ? resolve(output) : undefined,
-      file: isDIR ? undefined : resolve(output),
+      dir: isDIR ? output : undefined,
+      file: isDIR ? undefined : output,
       format: 'cjs',
       legacy: false,
       esModule: false
@@ -19,7 +22,8 @@ function configure(input, output) {
   };
 }
 
+const srcDir = resolve('src');
+
 module.exports = [
-  configure('src/index.js', `dist/${DIST_FILENAME}.c.js`),
-  ...sourceDir.map(dir => configure(`src/plugins/${dir}/index.js`, `dist/${dir}.js`))
+  configure(resolve(srcDir, 'index.js'), releaseDir(pkg.name + '.common.js'))
 ];

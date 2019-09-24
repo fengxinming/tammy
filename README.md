@@ -2,7 +2,7 @@
 
 [![npm package](https://nodei.co/npm/tammy.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy)
 
-> Note: The progressive HTTP client for the browser and node.js
+> Note: The progressive HTTP client for the browser
 
 ---
 
@@ -15,7 +15,7 @@
   - [Options Defaults](#Options-Defaults)
   - [Interceptors](#Interceptors)
   - [Handling Errors](#Handling-Errors)
-  - [Abortion](#Abortion)
+  - [CancelToken](#CancelToken)
   - [Plugin](#Plugin)
   - [License](#License)
 
@@ -27,10 +27,6 @@
 
 ```html
 <script src="//cdn.jsdelivr.net/npm/tammy/tammy.min.js"></script>
-
-// or
-
-<script src="//cdn.jsdelivr.net/npm/tammy/tammy.browser.min.js"></script>
 ```
 
 ### CommonJS style with npm
@@ -45,48 +41,19 @@ npm install tammy --save
 
 // es6
 import tammy from 'tammy';
-// or
-import tammy from 'tammy/index';
 
 // optional modularity
-
-// use auth plugin
-import auth from 'tammy/plugins/auth';
 // use xsrf plugin
 import xsrf from 'tammy/plugins/xsrf';
-// use res-headers plugin
-import resHeaders from 'tammy/plugins/res-headers';
-tammy
-  .use(auth)
-  .use(xsrf)
-  .use(resHeaders);
+tammy.install(xsrf);
 
 // es5
 const tammy = require('tammy');
 
 // optional modularity
-
-// use auth plugin
-const auth = require('tammy/auth');
 // use xsrf plugin
 const xsrf = require('tammy/xsrf');
-// use res-headers plugin
-const resHeaders = require('tammy/res-headers');
-tammy
-  .use(auth)
-  .use(xsrf)
-  .use(resHeaders);  
-
-```
-
-#### Request for for Node
-
-```javascript
-
-// node
-const tammy = require('tammy');
-
-tammy.use(require('tammy/http'));
+tammy.install(xsrf);
 
 ```
 
@@ -289,15 +256,15 @@ These are the available options for making requests. Only the `url` is required.
 }
 ```
 
-- `abortion` - specifies a abortion token that can be used to abort the request (see Abortion section below for details)
+- `cancelToken` - specifies a cancel token that can be used to abort the request (see CancelToken section below for details)
 
 ```javascript
-let abortionToken;
+let cancelToken;
 // ...
 
 {
-  abortion: function(token) {
-    abortionToken = token;
+  cancelToken: function(token) {
+    cancelToken = token;
   }
 }
 ```
@@ -363,8 +330,8 @@ The response for a request contains the following information.
   // All header names are lower cased
   headers: {},
 
-  // `options` is the config that was provided to `tammy` for the request
-  options: {},
+  // `config` is the config that was provided to `tammy` for the request
+  config: {},
 
   // `request` is the request that generated this response
   // It is the last ClientRequest instance in node.js (in redirects)
@@ -382,7 +349,7 @@ tammy.get('/user/12345')
     console.log(response.status);
     console.log(response.statusText);
     console.log(response.headers);
-    console.log(response.options);
+    console.log(response.config);
   });
 ```
 
@@ -395,10 +362,9 @@ You can specify config defaults that will be applied to every request.
 ### Global tammy defaults
 
 ```js
-tammy.use(({ defaults, setHeader }) => {
-  defaults.baseUrl = 'https://api.example.com';
-  setHeader('Authorization', AUTH_TOKEN);
-  setHeader('Content-Type', 'application/x-www-form-urlencoded', 'POST');
+tammy.defaults.baseUrl = 'https://api.example.com';
+tammy.headers.common.Authorization = AUTH_TOKEN;
+tammy.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 });
 ```
 
@@ -411,14 +377,12 @@ const instance = tammy.create({
 });
 
 // Alter defaults after instance has been created
-tammy.use(({ setHeader }) => {
-  setHeader('Authorization', AUTH_TOKEN);
-});
+tammy.headers.common.Authorization = AUTH_TOKEN;
 ```
 
 ### Config order of precedence
 
-Config will be merged with an order of precedence. The order is library defaults found in [lib/defaults.js](https://github.com/tammy/tammy/blob/master/lib/defaults.js#L28), then `defaults` property of the instance, and finally `config` argument for the request. The latter will take precedence over the former. Here's an example.
+Config will be merged with an order of precedence. The order is library defaults found in [lib/Tammy.js](https://github.com/tammy/tammy/blob/master/lib/Tammy.js#L91), then `defaults` property of the instance, and finally `config` argument for the request. The latter will take precedence over the former. Here's an example.
 
 ```js
 // Create an instance using the config defaults provided by the library
@@ -427,9 +391,7 @@ const instance = tammy.create();
 
 // Override timeout default for the library
 // Now all requests using this instance will wait 2.5 seconds before timing out
-tammy.use(({ defaults }) => {
-  defaults.timeout = 2500;
-});
+tammy.defaults.timeout = 2500;
 
 // Override timeout for this request as it's known to take a long time
 instance.get('/longRequest', {
@@ -442,57 +404,51 @@ instance.get('/longRequest', {
 You can intercept requests or responses before they are handled by `then` or `catch`.
 
 ```js
-tammy.use(({ interceptors }) => {
-  // Add a request interceptor
-  interceptors.request.use(function({ interceptors }) {
-    // Do something before request is sent
-    return config;
-  }, function (error) {
-    // Do something with request error
-    return Promise.reject(error);
-  });
+// Add a request interceptor
+tammy.interceptors.request.use(function({ interceptors }) {
+  // Do something before request is sent
+  return config;
+}, function (error) {
+  // Do something with request error
+  return Promise.reject(error);
+});
 
-  // Add a response interceptor
-  interceptors.request.use(function (response) {
-    // Do something with response data
-    return response;
-  }, function (error) {
-    // Do something with response error
-    return Promise.reject(error);
-  });
+// Add a response interceptor
+tammy.interceptors.request.use(function (response) {
+  // Do something with response data
+  return response;
+}, function (error) {
+  // Do something with response error
+  return Promise.reject(error);
 });
 ```
 
 If you may need to remove a interceptor later you can.
 
 ```js
-tammy.use(({ interceptors }) => {
-  interceptors.request.eject(1);
-});
+tammy.interceptors.request.eject(1);
 ```
 
 You can add interceptors to a custom instance of tammy.
 
 ```js
 const instance = tammy.create();
-instance.use(({ interceptors }) => {
-  // Add a request interceptor
-  interceptors.request.use(function({ interceptors }) {
-    // Do something before request is sent
-    return config;
-  }, function (error) {
-    // Do something with request error
-    return Promise.reject(error);
-  });
+// Add a request interceptor
+instance.interceptors.request.use(function({ interceptors }) {
+  // Do something before request is sent
+  return config;
+}, function (error) {
+  // Do something with request error
+  return Promise.reject(error);
+});
 
-  // Add a response interceptor
-  interceptors.request.use(function (response) {
-    // Do something with response data
-    return response;
-  }, function (error) {
-    // Do something with response error
-    return Promise.reject(error);
-  });
+// Add a response interceptor
+instance.interceptors.request.use(function (response) {
+  // Do something with response data
+  return response;
+}, function (error) {
+  // Do something with response error
+  return Promise.reject(error);
 });
 ```
 
@@ -530,20 +486,20 @@ tammy.get('/user/12345', {
 })
 ```
 
-## Abortion
+## CancelToken
 
-You can abort a request using a *Abortion*.
+You can cancel a request using a *CancelToken*.
 
 ```js
-let abortionToken;
+let cancelToken;
 
 tammy.get('/user/12345', {
-  abortion(token) {
-    abortionToken = token;
+  cancelToken(token) {
+    cancelToken = token;
   }
 }).catch(function (thrown) {
-  if (tammy.isAborted(thrown)) {
-    console.log('Request aborted', thrown.message);
+  if (tammy.isCancelled(thrown)) {
+    console.log('Request cancelled', thrown.message);
   } else {
     // handle error
   }
@@ -553,20 +509,17 @@ tammy.post('/user/12345', {
   name: 'new name'
 })
 
-// abort the request (the message parameter is optional)
-tammy.abort(abortionToken, 'Operation aborted by the user.');
+// cancel the request (the message parameter is optional)
+tammy.cancel(cancelToken, 'Operation aborted by the user.');
 
-// abort all requests
-tammy.abortAll();
+// cancel all requests
+tammy.cancelAll();
 ```
 
 > Note: you can abort several requests.
 
 ## Plugin
 
-- [auth](https://github.com/fengxinming/tammy/tree/master/src/plugins/auth)
-- [http](https://github.com/fengxinming/tammy/tree/master/src/plugins/http)
-- [res-headers](https://github.com/fengxinming/tammy/tree/master/src/plugins/res-headers)
 - [xsrf](https://github.com/fengxinming/tammy/tree/master/src/plugins/xsrf)
 
 ## License

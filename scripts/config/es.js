@@ -1,19 +1,25 @@
 'use strict';
 
-const { resolve, DIST_FILENAME } = require('../_util');
+const { resolve, releaseDir } = require('../util');
+const pkg = require('../../package.json');
 
-function configure() {
+function configure(input, output) {
+  const isDIR = Array.isArray(input);
   return {
     inputOptions: {
-      input: resolve('src/index.js')
+      input,
+      external: (id) => {
+        return /^celia/.test(id);
+      }
     },
     outputOptions: {
-      file: resolve(`dist/${DIST_FILENAME}.es.js`),
+      dir: isDIR ? output : undefined,
+      file: isDIR ? undefined : output,
       format: 'es'
     }
   };
 }
 
 module.exports = [
-  configure()
+  configure(resolve('src/index.js'), releaseDir(pkg.name + '.esm.js'))
 ];

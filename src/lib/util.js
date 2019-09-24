@@ -2,28 +2,29 @@ import isObject from 'celia/isObject';
 import isNil from 'celia/isNil';
 import isString from 'celia/isString';
 import isFunction from 'celia/isFunction';
+import isNumber from 'celia/isNumber';
 import forOwn from 'celia/forOwn';
-import stringify from 'celia/qs/stringify';
-import isAbsolute from 'celia/url/isAbsolute';
-import joinURLs from 'celia/url/join';
-import assign from 'celia/object/assign';
-import forSlice from 'kick-array/forSlice';
-import append from 'kick-array/append';
-import removeAt from 'kick-array/removeAt';
+import stringifyQuery from 'qs-like/stringify';
+import isAbsoluteURL from 'celia/isAbsoluteURL';
+import joinPath from 'celia/joinPath';
+import loop from 'celia/_loop';
+import remove from 'celia/remove';
+import noop from 'celia/noop';
+import { EREQCANCELLED } from './constants';
 
 export {
   isNil,
   isString,
   isObject,
   isFunction,
+  isNumber,
   forOwn,
-  assign,
-  forSlice,
-  append,
-  removeAt,
-  stringify,
-  isAbsolute,
-  joinURLs
+  remove,
+  stringifyQuery,
+  isAbsoluteURL,
+  joinPath,
+  loop,
+  noop
 };
 
 /**
@@ -31,13 +32,11 @@ export {
  * @param {Object} srcObj
  * @param {Object} destObj
  */
-export function mergeDeep(srcObj, destObj) {
+function _merge(srcObj, destObj) {
   forOwn(destObj, (val, key) => {
-    if (isObject(val)) {
-      let source = srcObj[key];
-      // 如果原对象对应的key值是对象，继续深度复制
-      source = isObject(source) ? source : {};
-      srcObj[key] = mergeDeep(source, val);
+    let source = srcObj[key];
+    if (isObject(source) && isObject(val)) {
+      srcObj[key] = _merge(source, val);
     } else {
       srcObj[key] = val;
     }
@@ -49,9 +48,9 @@ export function mergeDeep(srcObj, destObj) {
  * 合并对象
  * @param {Object} result
  */
-export function assignDeep(result) {
-  forSlice(arguments, 1, (arg) => {
-    mergeDeep(result, arg);
+export function merge(result) {
+  loop(arguments, 1, arguments.length, (arg) => {
+    result = _merge(result, arg);
   });
   return result;
 }
@@ -62,8 +61,9 @@ export function assignDeep(result) {
  */
 export function formify(obj) {
   const form = [];
+  let i = 0;
   forOwn(obj, (val, key) => {
-    append(form, `${key}=${val}`);
+    form[i++] = `${key}=${val}`;
   });
   return form.join('&');
 }
@@ -73,6 +73,48 @@ export function formify(obj) {
  * @param {String} url
  * @param {String} qs
  */
-export function joinQS(url, qs) {
+export function joinQuery(url, qs) {
   return url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
+}
+
+/**
+ * 创建异常
+ * @param {String} message
+ * @param {Object} options
+ */
+export function createError(message, options) {
+  const error = new Error(message);
+  forOwn(options, (v, k) => {
+    error[k] = v;
+  });
+  return error;
+}
+
+// /**
+//  * 序列化header
+//  * @param {Object} headers
+//  * @param {String} normalizedName
+//  */
+// export function normalizeHeaderName(headers, normalizedName) {
+//   forOwn(headers, (value, name) => {
+//     if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
+//       headers[normalizedName] = value;
+//       delete headers[name];
+//     }
+//   });
+// }
+
+/**
+ * 是否是主动中断请求异常
+ * @param {Error} e
+ */
+export function isCancelled(e) {
+  return e && e.code === EREQCANCELLED;
+}
+
+/**
+ * 生成uuid
+ */
+export function uuid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
