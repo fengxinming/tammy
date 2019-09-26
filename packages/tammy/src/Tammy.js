@@ -8,7 +8,6 @@ import {
   stringifyQuery,
   joinQuery
 } from './util';
-import xhr from './xhr';
 import { CONTENT_TYPE, CONTENT_TYPES } from './constants';
 import { getToken } from './cancel';
 import interceptors from './interceptors';
@@ -37,15 +36,17 @@ function dispatchRequest(config) {
     url = joinPath(baseUrl, url);
   }
 
+  if (qs) {
+    url = joinQuery(url, isObject(qs) ? stringifyQuery(qs) : qs);
+  }
+
   // 参数处理
   switch (method) {
     case 'HEAD':
     case 'DELETE':
     case 'GET':
-      if (!qs) {
-        // 避免在发送get请求时，把data属性当作querystring
-        config.qs = data;
-        config.data = undefined;
+      if (data) {
+        url = joinQuery(url, isObject(data) ? stringifyQuery(data) : data);
       }
       break;
     case 'POST':
@@ -56,13 +57,6 @@ function dispatchRequest(config) {
           : formify(data);
       }
       break;
-  }
-
-  if (qs) {
-    if (isObject(qs)) {
-      qs = stringifyQuery(qs);
-    }
-    url = joinQuery(url, qs);
   }
 
   // 禁用缓存
@@ -77,7 +71,15 @@ function dispatchRequest(config) {
 
   config.url = url;
 
-  return adapter(config);
+  return adapter(config).then((res) => {
+    config.cancelToken.throw();
+    delete config.cancelToken;
+    return res;
+  }, (err) => {
+    config.cancelToken.throw();
+    delete config.cancelToken;
+    throw err;
+  });
 }
 
 export default class Tammy {
@@ -93,8 +95,7 @@ export default class Tammy {
       responseType: 'json', // 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304;
-      },
-      adapter: xhr
+      }
     }, options);
 
     const headers = this.headers = {

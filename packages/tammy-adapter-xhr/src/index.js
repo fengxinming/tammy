@@ -1,5 +1,7 @@
-import { forOwn, isNil, isString, isObject, isFunction, createError } from './util';
-import { ECONNRESET, ENETWORK, ECONNABORTED, EREQCANCELLED, CONTENT_TYPE } from './constants';
+import {
+  forOwn, isNil, isString, isFunction, createError,
+  ECONNRESET, ENETWORK, ECONNABORTED, CONTENT_TYPE
+} from 'tammy';
 
 const rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
 const logErr = (console && console.error) || function () { };
@@ -174,24 +176,15 @@ export default function (config) {
       request.upload.addEventListener('progress', onUploadProgress);
     }
 
-    cancelToken.subscribe((meta) => {
+    cancelToken.subscribe((reason) => {
       if (!request) {
         return;
       }
 
-      let message;
-      let response = { config, request, code: EREQCANCELLED };
-      if (isObject(meta)) {
-        forOwn(meta, (v, k) => {
-          response[k] = v;
-        });
-        message = meta.message;
-      } else {
-        message = meta;
-      }
-
+      reason.config = config;
+      reason.request = request;
       request.abort();
-      reject(createError(message || 'Request cancelled', response));
+      reject(reason);
       request = null;
     });
 

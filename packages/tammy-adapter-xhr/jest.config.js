@@ -1,5 +1,7 @@
 'use strict';
 
+const { join } = require('path');
+
 module.exports = {
   roots: [
     'test'
@@ -13,6 +15,9 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*'
   ],
+  moduleNameMapper: {
+    '^tammy$': join(__dirname, '..', 'tammy', 'src')
+  },
   transform: {
     '^.+\\.js$': 'babel-jest'
   },

@@ -1,8 +1,5 @@
-import * as util from './lib/util';
-import Tammy from './lib/Tammy';
-import { cancel, cancelAll } from './lib/cancel';
-
-const { merge, forOwn } = util;
+import Tammy from './Tammy';
+import { merge } from './util';
 
 function createInstance(options) {
   const tammy = new Tammy(options);
@@ -50,34 +47,12 @@ function createInstance(options) {
   return $http;
 }
 
-const instance = createInstance();
-
-/**
- * 常用方法
- */
-forOwn(util, (v, k) => {
-  instance[k] = v;
-});
-
 /**
  * 创建一个新实例
  * @param {Object} options
  */
-instance.create = function (options) {
+export function create(options) {
   return createInstance(options);
 };
 
-/**
- * 中断请求
- * @param {String} token
- * @param {any} anything
- */
-instance.cancel = cancel;
-
-/**
- * 中断所有的请求
- * @param {any} anything
- */
-instance.cancelAll = cancelAll;
-
-export default instance;
+export const http = createInstance();

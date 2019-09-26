@@ -4,6 +4,10 @@
 
 > Note: The progressive HTTP client for the browser
 
+[![NPM version](https://img.shields.io/npm/v/tammy.svg?style=flat)](https://npmjs.org/package/tammy)
+[![NPM Downloads](https://img.shields.io/npm/dm/tammy.svg?style=flat)](https://npmjs.org/package/tammy)
+[![](https://data.jsdelivr.com/v1/package/npm/tammy/badge)](https://www.jsdelivr.com/package/npm/tammy)
+
 ---
 
 ## Table of contents
@@ -17,6 +21,7 @@
   - [Handling Errors](#Handling-Errors)
   - [CancelToken](#CancelToken)
   - [Plugin](#Plugin)
+  - [Adapter](#Adapter)
   - [License](#License)
 
 ---
@@ -33,28 +38,8 @@
 
 ```bash
 npm install tammy --save
-```
-
-#### Request for for Browsers
-
-```javascript
-
-// es6
-import tammy from 'tammy';
-
-// optional modularity
-// use xsrf plugin
-import xsrf from 'tammy/plugins/xsrf';
-tammy.install(xsrf);
-
-// es5
-const tammy = require('tammy');
-
-// optional modularity
-// use xsrf plugin
-const xsrf = require('tammy/xsrf');
-tammy.install(xsrf);
-
+npm install tammy-adapter-xhr --save
+npm install tammy-plugin-xsrf --save
 ```
 
 ---
@@ -64,10 +49,12 @@ tammy.install(xsrf);
 Performing a `GET` request
 
 ```js
-const tammy = require('tammy');
+import { http } from 'tammy';
+import xhr from 'tammy-adapter-xhr';
+http.defaults.adapter = xhr;
 
 // Make a request for a user with a given ID
-tammy.get('/user?ID=12345')
+http.get('/user?ID=12345')
   .then(function (response) {
     // handle success
     console.log(response);
@@ -81,7 +68,7 @@ tammy.get('/user?ID=12345')
   });
 
 // Optionally the request above could also be done as
-tammy.get('/user', {
+http.get('/user', {
   qs: {
     ID: 12345
   }
@@ -99,7 +86,7 @@ tammy.get('/user', {
 // Want to use async/await? Add the `async` keyword to your outer function/method.
 async function getUser() {
   try {
-    const response = await tammy.get('/user?ID=12345');
+    const response = await http.get('/user?ID=12345');
     console.log(response);
   } catch (error) {
     console.error(error);
@@ -113,22 +100,26 @@ async function getUser() {
 Performing a `POST` request
 
 ```js
-tammy.post('/user', {
-    firstName: 'Fred',
-    lastName: 'Flintstone'
-  })
-  .then(function (response) {
-    console.log(response);
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+import { http } from 'tammy';
+
+request.post('/user', {
+  firstName: 'Fred',
+  lastName: 'Flintstone'
+})
+.then(function (response) {
+  console.log(response);
+})
+.catch(function (error) {
+  console.log(error);
+});
 ```
 
 Performing multiple concurrent requests
 
 ```js
-tammy.all([{
+import { http } from 'tammy';
+
+request.all([{
   url: '/user/12345',
   qs: {
     num: 1
@@ -143,13 +134,84 @@ tammy.all([{
 
 ## Tammy API
 
-Requests can be made by passing the relevant options to `tammy`.
+- Constants
+  - CONTENT_TYPE
+  - CONTENT_TYPES
+  - ECONNABORTED
+  - ECONNRESET
+  - ENETWORK
+  - EREQCANCELLED
+- Request
+  - cancel
+  - cancelAll
+  - create
+  - http
+- Utils
+  - createError
+  - forOwn
+  - formify
+  - isAbsoluteURL
+  - isCancelled
+  - isFunction
+  - isNil
+  - isNumber
+  - isObject
+  - isString
+  - joinPath
+  - joinQuery
+  - loop
+  - merge
+  - noop
+  - remove
+  - removeAt
+  - stringifyQuery
+  - uuid
 
-##### tammy(options)
+```js
+import {
+  CONTENT_TYPE,
+  CONTENT_TYPES,
+  ECONNABORTED,
+  ECONNRESET,
+  ENETWORK,
+  EREQCANCELLED,
+  cancel,
+  cancelAll,
+  create,
+  http,
+  createError,
+  forOwn,
+  formify,
+  isAbsoluteURL,
+  isCancelled,
+  isFunction,
+  isNil,
+  isNumber,
+  isObject,
+  isString,
+  joinPath,
+  joinQuery,
+  loop,
+  merge,
+  noop,
+  remove,
+  removeAt,
+  stringifyQuery,
+  uuid
+} from 'tammy';
+
+```
+
+Requests can be made by passing the relevant options to `http`.
+
+#### http(options)
 
 ```js
 // Send a POST request
-tammy({
+
+import { http } from 'tammy';
+
+http({
   method: 'post',
   url: '/user/12345',
   data: {
@@ -159,41 +221,48 @@ tammy({
 });
 ```
 
-##### tammy(url[, options])
+#### http(url[, options])
 
 ```js
 // Send a GET request (default method)
-tammy('/user/12345');
+
+import { http } from 'tammy';
+
+http('/user/12345');
 ```
 
 ### Request method aliases
 
 For convenience aliases have been provided for all supported request methods.
 
-##### tammy(options)
-##### tammy.get(url[, data[, options]])
-##### tammy.delete(url[, data[, options]])
-##### tammy.del(url[, data[, options]])
-##### tammy.head(url[, data[, options]])
-##### tammy.options(url[, data[, options]])
-##### tammy.post(url[, data[, options]])
-##### tammy.put(url[, data[, options]])
-##### tammy.patch(url[, data[, options]])
+#### http(options)
+#### http.get(url[, data[, options]])
+#### http.delete(url[, data[, options]])
+#### http.del(url[, data[, options]])
+#### http.head(url[, data[, options]])
+#### http.options(url[, data[, options]])
+#### http.post(url[, data[, options]])
+#### http.put(url[, data[, options]])
+#### http.patch(url[, data[, options]])
 
-###### NOTE
+> NOTE: 
 When using the alias methods `url`, `method`, and `data` properties don't need to be specified in options.
 
 ### Creating an instance
 
 You can create a new instance of tammy with a custom options.
 
-##### tammy.create([options])
+#### create([options])
 
 ```js
-const instance = tammy.create({
+import { create } from 'tammy';
+import xhr from 'tammy-adapter-xhr';
+
+const instance = create({
   baseUrl: 'https://some-domain.com/api/',
   timeout: 1000,
-  headers: {'X-Custom-Header': 'foobar'}
+  headers: {'X-Custom-Header': 'foobar'},
+  adapter: xhr
 });
 ```
 
@@ -201,15 +270,15 @@ const instance = tammy.create({
 
 The available instance methods are listed below. The specified options will be merged with the instance options.
 
-##### instance(options)
-##### instance.get(url[, data[, options]])
-##### instance.delete(url[, data[, options]])
-##### instance.del(url[, data[, options]])
-##### instance.head(url[, data[, options]])
-##### instance.options(url[, data[, options]])
-##### instance.post(url[, data[, options]])
-##### instance.put(url[, data[, options]])
-##### instance.patch(url[, data[, options]])
+#### instance(options)
+#### instance.get(url[, data[, options]])
+#### instance.delete(url[, data[, options]])
+#### instance.del(url[, data[, options]])
+#### instance.head(url[, data[, options]])
+#### instance.options(url[, data[, options]])
+#### instance.post(url[, data[, options]])
+#### instance.put(url[, data[, options]])
+#### instance.patch(url[, data[, options]])
 
 ---
 
@@ -307,8 +376,6 @@ let cancelToken;
 }
 ```
 
-- `getAllResponseHeaders` defines the response header that can be parsed if it is `true`. before setting `getAllResponseHeaders ` you must preload `res-headers  plugin` (see Installation section below for details)
-
 ---
 
 ## Response Schema
@@ -343,7 +410,9 @@ The response for a request contains the following information.
 When using `then`, you will receive the response as follows:
 
 ```js
-tammy.get('/user/12345')
+import { http } from 'tammy';
+
+http.get('/user/12345')
   .then(function (response) {
     console.log(response.data);
     console.log(response.status);
@@ -359,12 +428,14 @@ When using `catch`, or passing a [rejection callback](https://developer.mozilla.
 
 You can specify config defaults that will be applied to every request.
 
-### Global tammy defaults
+### Global http defaults
 
 ```js
-tammy.defaults.baseUrl = 'https://api.example.com';
-tammy.headers.common.Authorization = AUTH_TOKEN;
-tammy.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+import { http } from 'tammy';
+
+http.defaults.baseUrl = 'https://api.example.com';
+http.headers.common.Authorization = AUTH_TOKEN;
+http.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 });
 ```
 
@@ -372,12 +443,14 @@ tammy.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 ```js
 // Set config defaults when creating the instance
-const instance = tammy.create({
+import { create } from 'tammy';
+
+const instance = create({
   baseUrl: 'https://api.example.com'
 });
 
 // Alter defaults after instance has been created
-tammy.headers.common.Authorization = AUTH_TOKEN;
+instance.headers.common.Authorization = AUTH_TOKEN;
 ```
 
 ### Config order of precedence
@@ -387,11 +460,14 @@ Config will be merged with an order of precedence. The order is library defaults
 ```js
 // Create an instance using the config defaults provided by the library
 // At this point the timeout config value is `0` as is the default for the library
-const instance = tammy.create();
+
+import { create } from 'tammy';
+
+const instance = create();
 
 // Override timeout default for the library
 // Now all requests using this instance will wait 2.5 seconds before timing out
-tammy.defaults.timeout = 2500;
+instance.defaults.timeout = 2500;
 
 // Override timeout for this request as it's known to take a long time
 instance.get('/longRequest', {
@@ -405,7 +481,9 @@ You can intercept requests or responses before they are handled by `then` or `ca
 
 ```js
 // Add a request interceptor
-tammy.interceptors.request.use(function({ interceptors }) {
+import { http } from 'tammy';
+
+const interceptorId = http.interceptors.request.use(function({ interceptors }) {
   // Do something before request is sent
   return config;
 }, function (error) {
@@ -414,7 +492,7 @@ tammy.interceptors.request.use(function({ interceptors }) {
 });
 
 // Add a response interceptor
-tammy.interceptors.request.use(function (response) {
+http.interceptors.response.use(function (response) {
   // Do something with response data
   return response;
 }, function (error) {
@@ -426,13 +504,16 @@ tammy.interceptors.request.use(function (response) {
 If you may need to remove a interceptor later you can.
 
 ```js
-tammy.interceptors.request.eject(1);
+http.interceptors.request.eject(interceptorId);
+http.interceptors.request.eject(1);
 ```
 
 You can add interceptors to a custom instance of tammy.
 
 ```js
-const instance = tammy.create();
+import { create } from 'tammy';
+
+const instance = create();
 // Add a request interceptor
 instance.interceptors.request.use(function({ interceptors }) {
   // Do something before request is sent
@@ -455,7 +536,7 @@ instance.interceptors.request.use(function (response) {
 ## Handling Errors
 
 ```js
-tammy.get('/user/12345')
+http.get('/user/12345')
   .catch(function (error) {
     if (error.response) {
       // The request was made and the server responded with a status code
@@ -479,7 +560,7 @@ tammy.get('/user/12345')
 You can define a custom HTTP status code error range using the `validateStatus` config option.
 
 ```js
-tammy.get('/user/12345', {
+http.get('/user/12345', {
   validateStatus: function (status) {
     return status < 500; // Reject only if the status code is greater than or equal to 500
   }
@@ -493,34 +574,38 @@ You can cancel a request using a *CancelToken*.
 ```js
 let cancelToken;
 
-tammy.get('/user/12345', {
+http.get('/user/12345', {
   cancelToken(token) {
     cancelToken = token;
   }
 }).catch(function (thrown) {
-  if (tammy.isCancelled(thrown)) {
+  if (isCancelled(thrown)) {
     console.log('Request cancelled', thrown.message);
   } else {
     // handle error
   }
 });
 
-tammy.post('/user/12345', {
+http.post('/user/12345', {
   name: 'new name'
 })
 
 // cancel the request (the message parameter is optional)
-tammy.cancel(cancelToken, 'Operation aborted by the user.');
+http.cancel(cancelToken, 'Operation aborted by the user.');
 
 // cancel all requests
-tammy.cancelAll();
+http.cancelAll();
 ```
 
 > Note: you can abort several requests.
 
 ## Plugin
 
-- [xsrf](https://github.com/fengxinming/tammy/tree/master/src/plugins/xsrf)
+- [xsrf](https://github.com/fengxinming/tammy/tree/master/packages/tammy-plugin-xsrf)
+
+## Adapter
+
+- [xhr](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-xhr)
 
 ## License
 

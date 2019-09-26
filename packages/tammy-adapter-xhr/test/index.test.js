@@ -1,5 +1,6 @@
-import tammy from '../src/index';
-import { makeXHR } from './util';
+import { http as request, create, cancel, cancelAll, isCancelled } from '../../tammy/src';
+import xhr from '../src';
+import { makeXHR } from '../../../test/util';
 import { sleep } from 'celia';
 
 describe('测试 tammy', () => {
@@ -8,6 +9,7 @@ describe('测试 tammy', () => {
 
   beforeAll(() => {
     window.XMLHttpRequest = makeXHR();
+    request.defaults.adapter = xhr;
   });
 
   let url = 'https://github.com/fengxinming?cat=famous&count=10';
@@ -16,7 +18,7 @@ describe('测试 tammy', () => {
   let newTammy;
 
   it('测试 get 请求', async () => {
-    await tammy
+    await request
       .get(url)
       .then(({ data }) => {
         expect(data).toEqual(
@@ -27,7 +29,7 @@ describe('测试 tammy', () => {
         );
       });
 
-    await tammy
+    await request
       .get(url, {
         aa: 'aa',
         bb: 'bb'
@@ -41,7 +43,7 @@ describe('测试 tammy', () => {
         );
       });
 
-    await tammy(url, {
+    await request(url, {
       qs: {
         aa: 'aa',
         bb: 'bb'
@@ -55,7 +57,7 @@ describe('测试 tammy', () => {
       );
     });
 
-    await tammy(url, {
+    await request(url, {
       qs: 'aa=aa&bb=bb',
       cache: false
     }).then(({ config }) => {
@@ -64,7 +66,7 @@ describe('测试 tammy', () => {
   });
 
   it('测试 post 请求', async () => {
-    await tammy({
+    await request({
       method: 'POST',
       url,
       onDownloadProgress() { },
@@ -78,7 +80,7 @@ describe('测试 tammy', () => {
       );
     });
 
-    await tammy.post(url, {
+    await request.post(url, {
       aa: 'aa',
       bb: 'bb'
     }).then(({ data }) => {
@@ -92,8 +94,9 @@ describe('测试 tammy', () => {
   });
 
   it('测试创建新的实例', async () => {
-    newTammy = tammy.create({
-      baseUrl: url2
+    newTammy = create({
+      baseUrl: url2,
+      adapter: xhr
     });
     await newTammy({
       url3,
@@ -112,7 +115,7 @@ describe('测试 tammy', () => {
   });
 
   it('测试处理 contentType', async () => {
-    await tammy({
+    await request({
       url,
       method: 'POST',
       contentType: 'json',
@@ -129,7 +132,7 @@ describe('测试 tammy', () => {
       );
     });
 
-    await tammy({
+    await request({
       url,
       headers: {
         'Content-Type': ''
@@ -151,7 +154,7 @@ describe('测试 tammy', () => {
   });
 
   it('测试并发请求', async () => {
-    await tammy.all([url, url2]).then(([{ data }]) => {
+    await request.all([url, url2]).then(([{ data }]) => {
       expect(data).toEqual(
         expect.objectContaining({
           code: expect.any(Number),
@@ -178,26 +181,25 @@ describe('测试 tammy', () => {
       config.headers = { 'X-SB-B': 'S' };
       return config;
     });
-    request.eject(id);
-    request.eject(1);
-    request.eject();
+    expect(request.eject(id)).toBe(true);
+    expect(request.eject()).toBe(false);
     await newTammy(url);
   });
 
   it('测试设置请求头', async () => {
-    tammy.headers.common['X-SB'] = 'SB';
-    tammy.headers.common['Content-Type'] = '';
-    tammy.headers.post['Content-Type'] = 'json';
+    request.headers.common['X-SB'] = 'SB';
+    request.headers.common['Content-Type'] = '';
+    request.headers.post['Content-Type'] = 'json';
   });
 
   it('测试终止请求', async () => {
     let token;
     setTimeout(() => {
-      tammy.cancel(token, '测试终止请求');
-      tammy.cancel();
+      cancel(token, '测试终止请求');
+      cancel();
     }, 100);
     try {
-      await tammy({
+      await request({
         url,
         cancelToken(t) {
           token = t;
@@ -210,38 +212,16 @@ describe('测试 tammy', () => {
         }
       });
     } catch (e) {
-      expect(tammy.isCancelled(e)).toBe(true);
+      expect(isCancelled(e)).toBe(true);
     }
 
     await sleep(100);
 
     setTimeout(() => {
-      tammy.cancel(token);
+      cancel(token);
     }, 100);
     try {
-      await tammy({
-        url,
-        cancelToken(t) {
-          token = t;
-        },
-        method: 'POST',
-        contentType: 'json',
-        data: {
-          aa: 'aa',
-          bb: 'bb'
-        }
-      });
-    } catch (e) {
-      expect(e.message).toBe('Request cancelled');
-    }
-
-    await sleep(100);
-
-    setTimeout(() => {
-      tammy.cancel(token, {});
-    }, 100);
-    try {
-      await tammy({
+      await request({
         url,
         cancelToken(t) {
           token = t;
@@ -260,10 +240,32 @@ describe('测试 tammy', () => {
     await sleep(100);
 
     setTimeout(() => {
-      tammy.cancelAll({ message: '测试终止请求2' });
+      cancel(token, {});
+    }, 100);
+    try {
+      await request({
+        url,
+        cancelToken(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      });
+    } catch (e) {
+      expect(e.message).toBe('Request cancelled');
+    }
+
+    await sleep(100);
+
+    setTimeout(() => {
+      cancelAll({ message: '测试终止请求2' });
     }, 100);
 
-    await expect(tammy.all([{
+    await expect(request.all([{
       url,
       cancelToken(t) {
         token = t;
@@ -296,14 +298,13 @@ describe('测试 tammy', () => {
   it('测试处理超时', async () => {
     window.XMLHttpRequest = makeXHR({ timeout: 100 });
     try {
-      await tammy({
+      await request({
         url,
         headers: {
           'Content-Type': ''
         },
         method: 'POST',
-        timeout: 100,
-        getAllResponseHeaders: true
+        timeout: 100
       });
     } catch (e) {
       expect(e.code).toBe('ECONNRESET');
@@ -314,14 +315,13 @@ describe('测试 tammy', () => {
   it('测试处理网络异常', async () => {
     window.XMLHttpRequest = makeXHR({ error: true });
     try {
-      await tammy({
+      await request({
         url,
         headers: {
           'Content-Type': ''
         },
         method: 'POST',
-        timeout: 100,
-        getAllResponseHeaders: true
+        timeout: 100
       });
     } catch (e) {
       expect(e.message).toBe('Network Error');
@@ -332,24 +332,23 @@ describe('测试 tammy', () => {
   it('测试中断请求', async () => {
     window.XMLHttpRequest = makeXHR({ abort: true });
     try {
-      await tammy({
+      await request({
         url,
         headers: {
           'Content-Type': ''
         },
         method: 'POST',
-        timeout: 100,
-        getAllResponseHeaders: true
+        timeout: 100
       });
     } catch (e) {
-      expect(tammy.isAborted(e)).toBe(true);
+      expect(isCancelled(e)).toBe(true);
     }
     window.XMLHttpRequest = makeXHR();
   });
 
   it('测试验证状态失败', async () => {
     try {
-      await tammy({
+      await request({
         url,
         validateStatus(status) {
           return !status;
@@ -361,7 +360,7 @@ describe('测试 tammy', () => {
   });
 
   it('测试auth认证', async () => {
-    await tammy({
+    await request({
       method: 'POST',
       url,
       auth: {
@@ -372,7 +371,7 @@ describe('测试 tammy', () => {
       expect(config.headers.Authorization).toBe('Basic YWJjOjEyMw==');
     });
 
-    await tammy({
+    await request({
       method: 'POST',
       url,
       auth: {
@@ -385,7 +384,7 @@ describe('测试 tammy', () => {
   });
 
   it('测试处理headers', async () => {
-    await tammy({
+    await request({
       url,
       headers: {
         'Content-Type': ''

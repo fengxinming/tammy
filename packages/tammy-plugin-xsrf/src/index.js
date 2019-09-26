@@ -2,7 +2,7 @@ import cookies from './cookies';
 import { isStandardBrowserEnv, isURLSameOrigin } from './util';
 
 export default function ({ interceptors }) {
-  if (window && window.window === window) {
+  if (typeof window !== 'undefined' && window.window === window) {
     interceptors.request.use((options) => {
       const {
         url,

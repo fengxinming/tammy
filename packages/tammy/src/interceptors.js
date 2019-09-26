@@ -1,4 +1,4 @@
-import { uuid, remove } from './util';
+import { uuid, remove, removeAt, isNumber, isNil } from './util';
 
 class Interceptor {
 
@@ -17,12 +17,13 @@ class Interceptor {
 
   eject(id) {
     if (id) {
-      const item = remove(this.ids, id);
-      if (item) {
-        delete this.fns[id];
+      const item = isNumber(id)
+        ? removeAt(this.ids, id)
+        : remove(this.ids, id);
+      if (!isNil(item)) {
+        delete this.fns[item];
         return true;
       }
-      return false;
     }
     return false;
   }

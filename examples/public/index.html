@@ -4,24 +4,32 @@
 <head>
   <title>Tammy</title>
   <script type="text/javascript" src="/tammy.js"></script>
+  <script type="text/javascript" src="/tammy-adapter-xhr.js"></script>
   <script type="text/javascript">
+    var http = tammy.http;
+    var cancel = tammy.cancel;
     var token, token2;
-    tammy({
+    http.defaults.adapter = tammyAdapterXhr;
+    http({
       url: '/api/sleep200',
-      abortion: function (t) {
+      cancelToken: function (t) {
         token = t;
       }
+    }).catch(function (err) {
+      console.log(1, err);
     });
-    tammy.abort(token, '中断请求');
+    cancel(token, '中断请求');
 
-    tammy({
+    http({
       url: '/api/sleep2000',
-      abortion: function (t) {
+      cancelToken: function (t) {
         token2 = t;
       }
+    }).catch(function (err) {
+      console.log(2, err);
     });
     setTimeout(function () {
-      tammy.abort(token2, '中断请求2');
+      cancel(token2, '中断请求2');
     }, 1000);
   </script>
 </head>

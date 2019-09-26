@@ -9,6 +9,7 @@ import isAbsoluteURL from 'celia/isAbsoluteURL';
 import joinPath from 'celia/joinPath';
 import loop from 'celia/_loop';
 import remove from 'celia/remove';
+import removeAt from 'celia/removeAt';
 import noop from 'celia/noop';
 import { EREQCANCELLED } from './constants';
 
@@ -20,6 +21,7 @@ export {
   isNumber,
   forOwn,
   remove,
+  removeAt,
   stringifyQuery,
   isAbsoluteURL,
   joinPath,

@@ -1,7 +1,6 @@
 'use strict';
 
 const { resolve, releaseDir } = require('../util');
-const pkg = require('../../package.json');
 
 function configure(input, output) {
   const isDIR = Array.isArray(input);
@@ -9,7 +8,7 @@ function configure(input, output) {
     inputOptions: {
       input,
       external: (id) => {
-        return /^celia/.test(id);
+        return /^tammy/.test(id);
       }
     },
     outputOptions: {
@@ -21,5 +20,5 @@ function configure(input, output) {
 }
 
 module.exports = [
-  configure(resolve('src/index.js'), releaseDir(pkg.name + '.esm.js'))
+  configure(resolve('src/index.js'), releaseDir('esm.js'))
 ];
