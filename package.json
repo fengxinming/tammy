@@ -1,6 +1,6 @@
 {
   "name": "tammy",
-  "version": "2.0.0-beta.1",
+  "version": "1.0.0",
   "description": "The progressive HTTP client for the browser.",
   "main": "./tammy.common.js",
   "module": "./tammy.esm.js",

@@ -1,6 +1,6 @@
 {
   "name": "tammy-adapter-xhr",
-  "version": "2.0.0-beta.1",
+  "version": "1.0.0-beta.1",
   "description": "The progressive HTTP client for the browser.",
   "main": "./common.js",
   "module": "./esm.js",
