@@ -31,7 +31,7 @@
 ### Load `tammy` via classical `<script>` tag
 
 ```html
-<script src="//cdn.jsdelivr.net/npm/tammy/tammy.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
 ```
 
 ### CommonJS style with npm
