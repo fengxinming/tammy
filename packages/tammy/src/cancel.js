@@ -30,7 +30,7 @@ class CancelToken {
     }
   }
 
-  throw() {
+  throwIfRequested() {
     const { state } = this;
     this.remove();
     if (state === 'cancelled') {

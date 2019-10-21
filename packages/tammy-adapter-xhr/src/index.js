@@ -76,7 +76,7 @@ export default function (config) {
       }
 
       // 处理响应
-      let responseData = (!responseType || responseType === 'text') ? request : (request.response || request.responseText);
+      let responseData = !config.responseType || config.responseType === 'text' ? request.responseText : request.response;
       const response = {
         data: responseData,
         statusText: request.statusText,

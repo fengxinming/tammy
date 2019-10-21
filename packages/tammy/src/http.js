@@ -1,6 +1,10 @@
 import Tammy from './Tammy';
 import { merge } from './util';
 
+/**
+ * 创建 http 实例
+ * @param {Object} options
+ */
 function createInstance(options) {
   const tammy = new Tammy(options);
 

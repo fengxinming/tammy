@@ -1,5 +1,7 @@
-import isNil from 'celia/isNil';
-import isString from 'celia/isString';
+import {
+  isNil,
+  isString
+} from 'tammy';
 
 export function isStandardBrowserEnv() {
   if (!isNil(navigator) && (navigator.product === 'ReactNative' ||

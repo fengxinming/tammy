@@ -1,5 +1,7 @@
-import isNumber from 'celia/isNumber';
-import isString from 'celia/isString';
+import {
+  isNumber,
+  isString
+} from 'tammy';
 import { isStandardBrowserEnv } from './util';
 
 const cookies = {

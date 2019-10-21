@@ -11,6 +11,12 @@
     var token, token2;
     http.defaults.adapter = tammyAdapterXhr;
     http({
+      url: '/tammy-adapter-xhr.js',
+      responseType: 'text'
+    }).then(function (res) {
+      console.log(res);
+    });
+    http({
       url: '/api/sleep200',
       cancelToken: function (t) {
         token = t;

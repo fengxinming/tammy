@@ -12,10 +12,9 @@ import { CONTENT_TYPE, CONTENT_TYPES } from './constants';
 import { getToken } from './cancel';
 import interceptors from './interceptors';
 
+let nonce = Date.now();
 const { stringify } = JSON;
 const RCACHE = /([?&]_=)[^&]*/;
-let nonce = Date.now();
-
 /**
  * 请求接口
  * @param {Object} options
@@ -32,10 +31,12 @@ function dispatchRequest(config) {
     adapter
   } = config;
 
+  // 拼接根路由
   if (baseUrl && !isAbsoluteURL(url)) {
     url = joinPath(baseUrl, url);
   }
 
+  // 拼接查询参数
   if (qs) {
     url = joinQuery(url, isObject(qs) ? stringifyQuery(qs) : qs);
   }
@@ -45,11 +46,24 @@ function dispatchRequest(config) {
     case 'HEAD':
     case 'DELETE':
     case 'GET':
+      // 兼容data参数
       if (data) {
         url = joinQuery(url, isObject(data) ? stringifyQuery(data) : data);
       }
+
+      // 禁用缓存
+      if (cache === false) {
+        nonce++;
+        const newUrl = url.replace(RCACHE, `$1${nonce}`);
+        // url上未使用缓存标识
+        if (newUrl === url) {
+          url = joinQuery(url, '_=' + nonce);
+        }
+      }
       break;
     case 'POST':
+    case 'PUT':
+    case 'PATCH':
       // 校验post数据格式
       if (isObject(data)) {
         config.data = !(headers[CONTENT_TYPE] || '').indexOf('application/json')
@@ -59,26 +73,17 @@ function dispatchRequest(config) {
       break;
   }
 
-  // 禁用缓存
-  if (cache === false && ['HEAD', 'DELETE', 'GET'].indexOf(method) > -1) {
-    nonce++;
-    const newUrl = url.replace(RCACHE, `$1${nonce}`);
-    // url上未使用缓存标识
-    if (newUrl === url) {
-      url = joinQuery(url, '_=' + nonce);
-    }
-  }
-
   config.url = url;
 
+  // 如果已经取消，需要抛出异常
   return adapter(config).then((res) => {
-    config.cancelToken.throw();
+    config.cancelToken.throwIfRequested();
     delete config.cancelToken;
     return res;
   }, (err) => {
-    config.cancelToken.throw();
+    config.cancelToken.throwIfRequested();
     delete config.cancelToken;
-    throw err;
+    return Promise.reject(err);
   });
 }
 
@@ -87,7 +92,6 @@ export default class Tammy {
   constructor(options) {
     // 拦截器 钩子函数
     this.interceptors = interceptors();
-    this.interceptors.request.use(dispatchRequest);
 
     // 合并参数
     this.defaults = merge({
@@ -152,6 +156,7 @@ export default class Tammy {
     interceptors.request.forEach(({ fulfilled, rejected }) => {
       promise = promise.then(fulfilled, rejected);
     });
+    promise = promise.then(dispatchRequest);
     interceptors.response.forEach(({ fulfilled, rejected }) => {
       promise = promise.then(fulfilled, rejected);
     });

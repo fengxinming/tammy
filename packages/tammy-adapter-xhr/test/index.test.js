@@ -3,7 +3,7 @@ import xhr from '../src';
 import { makeXHR } from '../../../test/util';
 import { sleep } from 'celia';
 
-describe('测试 tammy', () => {
+describe('测试 tammy-adapter-xhr', () => {
 
   const originalXMLHttpRequest = window.XMLHttpRequest;
 
@@ -192,107 +192,99 @@ describe('测试 tammy', () => {
     request.headers.post['Content-Type'] = 'json';
   });
 
-  it('测试终止请求', async () => {
-    let token;
-    setTimeout(() => {
-      cancel(token, '测试终止请求');
-      cancel();
-    }, 100);
-    try {
-      await request({
-        url,
-        cancelToken(t) {
-          token = t;
-        },
-        method: 'POST',
-        contentType: 'json',
-        data: {
-          aa: 'aa',
-          bb: 'bb'
-        }
-      });
-    } catch (e) {
-      expect(isCancelled(e)).toBe(true);
-    }
-
-    await sleep(100);
-
-    setTimeout(() => {
-      cancel(token);
-    }, 100);
-    try {
-      await request({
-        url,
-        cancelToken(t) {
-          token = t;
-        },
-        method: 'POST',
-        contentType: 'json',
-        data: {
-          aa: 'aa',
-          bb: 'bb'
-        }
-      });
-    } catch (e) {
-      expect(e.message).toBe('Request cancelled');
-    }
-
-    await sleep(100);
-
-    setTimeout(() => {
-      cancel(token, {});
-    }, 100);
-    try {
-      await request({
-        url,
-        cancelToken(t) {
-          token = t;
-        },
-        method: 'POST',
-        contentType: 'json',
-        data: {
-          aa: 'aa',
-          bb: 'bb'
-        }
-      });
-    } catch (e) {
-      expect(e.message).toBe('Request cancelled');
-    }
-
-    await sleep(100);
-
-    setTimeout(() => {
-      cancelAll({ message: '测试终止请求2' });
-    }, 100);
-
-    await expect(request.all([{
-      url,
-      cancelToken(t) {
-        token = t;
-      },
-      method: 'POST',
-      contentType: 'json',
-      data: {
-        aa: 'aa',
-        bb: 'bb'
+  describe('测试终止请求', () => {
+    it('测试终止请求后的异常判断', async () => {
+      let token;
+      setTimeout(() => {
+        cancel(token, '测试终止请求');
+        cancel();
+      }, 100);
+      try {
+        await request({
+          url,
+          cancelToken(t) {
+            token = t;
+          },
+          method: 'POST',
+          contentType: 'json',
+          data: {
+            aa: 'aa',
+            bb: 'bb'
+          }
+        });
+      } catch (e) {
+        expect(isCancelled(e)).toBe(true);
       }
-    }, {
-      url,
-      cancelToken(t) {
-        token = t;
-      },
-      method: 'POST',
-      contentType: 'json',
-      data: {
-        aa: 'aa',
-        bb: 'bb'
-      }
-    }])).rejects.toEqual(
-      expect.objectContaining({
-        message: '测试终止请求2'
-      })
-    );
 
+      await sleep(100);
+    });
+
+    it('测试终止请求后的默认异常信息', async () => {
+      let token;
+      setTimeout(() => {
+        cancel(token);
+      }, 100);
+      await expect(request({
+        url,
+        cancelToken(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      })).rejects.toThrow('Request cancelled');
+
+      await sleep(100);
+    });
+
+    it('测试终止请求后的默认异常信息2', async () => {
+      let token;
+      setTimeout(() => {
+        cancel(token, {});
+      }, 100);
+      await expect(request({
+        url,
+        cancelToken(t) {
+          token = t;
+        },
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      })).rejects.toThrow('Request cancelled');
+      await sleep(100);
+    });
+
+    it('测试终止所有的请求', async () => {
+      setTimeout(() => {
+        cancelAll({ message: '测试终止所有的请求' });
+      }, 100);
+
+      await expect(request.all([{
+        url,
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      }, {
+        url,
+        method: 'POST',
+        contentType: 'json',
+        data: {
+          aa: 'aa',
+          bb: 'bb'
+        }
+      }])).rejects.toThrow('测试终止所有的请求');
+
+      await sleep(100);
+    });
   });
 
   it('测试处理超时', async () => {
@@ -346,17 +338,13 @@ describe('测试 tammy', () => {
     window.XMLHttpRequest = makeXHR();
   });
 
-  it('测试验证状态失败', async () => {
-    try {
-      await request({
-        url,
-        validateStatus(status) {
-          return !status;
-        }
-      });
-    } catch (e) {
-      expect(e.message).toBe('Request failed with status code 200');
-    }
+  it('测试验证状态失败', () => {
+    return expect(request({
+      url,
+      validateStatus(status) {
+        return !status;
+      }
+    })).rejects.toThrow('Request failed with status code 200');
   });
 
   it('测试auth认证', async () => {

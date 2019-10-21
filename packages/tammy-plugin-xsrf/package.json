@@ -1,7 +1,7 @@
 {
   "name": "tammy-plugin-xsrf",
-  "version": "1.0.0-beta.1",
-  "description": "The progressive HTTP client for the browser.",
+  "version": "1.0.0",
+  "description": "A tammy plugin for xsrf.",
   "main": "./common.js",
   "module": "./esm.js",
   "unpkg": "./umd.js",
@@ -15,19 +15,17 @@
     "url": "git+https://github.com/fengxinming/tammy.git"
   },
   "keywords": [
-    "xhr",
-    "XMLHttpRequest",
-    "ajax",
-    "fetch",
-    "axios",
-    "http",
-    "promise",
-    "node"
+    "tammy",
+    "xsrf",
+    "axios"
   ],
   "author": "Jesse Feng",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fengxinming/tammy/issues"
   },
-  "homepage": "https://github.com/fengxinming/tammy#readme"
+  "homepage": "https://github.com/fengxinming/tammy#readme",
+  "dependencies": {
+    "tammy": "^1.1.0-beta.1"
+  }
 }
