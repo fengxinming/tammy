@@ -2,7 +2,7 @@
 
 [![npm package](https://nodei.co/npm/tammy-mock.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy-mock)
 
-> Note: xhr adapter
+> Note: mock for tammy or axios
 
 [![NPM version](https://img.shields.io/npm/v/tammy-mock.svg?style=flat)](https://npmjs.org/package/tammy-mock)
 [![NPM Downloads](https://img.shields.io/npm/dm/tammy-mock.svg?style=flat)](https://npmjs.org/package/tammy-mock)
