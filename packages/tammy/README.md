@@ -606,6 +606,7 @@ http.cancelAll();
 ## Adapter
 
 - [xhr](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-xhr)
+- [mock](https://github.com/fengxinming/tammy/tree/master/packages/tammy-mock)
 
 ## License
 

@@ -31,6 +31,6 @@
   },
   "homepage": "https://github.com/fengxinming/tammy#readme",
   "dependencies": {
-    "tammy": "^1.1.0-beta.1"
+    "tammy": "^1.1.0"
   }
 }

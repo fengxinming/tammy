@@ -59,7 +59,7 @@ http.defaults.adapter = mock.getAdapter();
 ### res
   - req
   - headers
-  - type()
+  - type(type)
   - header(name, value)
   - set(name, value)
   - setHeader(name, value)
