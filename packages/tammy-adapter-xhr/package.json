@@ -1,0 +1,36 @@
+{
+  "name": "tammy-adapter-xhr",
+  "version": "1.0.0",
+  "description": "The progressive HTTP client for the browser.",
+  "main": "./common.js",
+  "module": "./esm.js",
+  "unpkg": "./umd.js",
+  "jsdelivr": "./umd.js",
+  "scripts": {
+    "build": "node ./scripts/build.js",
+    "test": "jest --detectOpenHandles --config jest.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengxinming/tammy.git"
+  },
+  "keywords": [
+    "xhr",
+    "XMLHttpRequest",
+    "ajax",
+    "fetch",
+    "axios",
+    "http",
+    "promise",
+    "node"
+  ],
+  "author": "Jesse Feng",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fengxinming/tammy/issues"
+  },
+  "homepage": "https://github.com/fengxinming/tammy#readme",
+  "dependencies": {
+    "tammy": "^1.1.0"
+  }
+}

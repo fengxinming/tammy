@@ -5,10 +5,10 @@ const { exec } = require('./util');
 
 const cwd = process.cwd();
 
-['tammy', 'tammy-adapter-xhr', 'tammy-plugin-xsrf', 'tammy-mock'].forEach(
+['tammy-adapter-xhr', 'tammy-plugin-xsrf', 'tammy-mock'].forEach(
   (packageName) => {
     process.chdir(join(__dirname, '..', 'packages', packageName));
-    exec(['run', 'build']);
+    exec(['run', 'test']);
   }
 );
 

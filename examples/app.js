@@ -1,5 +1,6 @@
 'use strict';
 
+const { readFileSync } = require('fs');
 const { join } = require('path');
 const Koa = require('koa');
 const { Router } = require('koay-router');
@@ -8,6 +9,14 @@ const { sleep } = require('celia');
 
 const app = new Koa();
 const router = new Router();
+router.get('/tammy.js', (ctx) => {
+  ctx.body = readFileSync(join(__dirname, '..', 'packages', 'tammy', 'npm', 'umd.js'));
+  ctx.type = 'application/javascript; charset=utf-8';
+});
+router.get('/tammy-adapter-xhr.js', (ctx) => {
+  ctx.body = readFileSync(join(__dirname, '..', 'packages', 'tammy-adapter-xhr', 'npm', 'umd.js'));
+  ctx.type = 'application/javascript; charset=utf-8';
+});
 router.get('/api/sleep200', async (ctx) => {
   await sleep(200);
   ctx.body = { code: 200 };
