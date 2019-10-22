@@ -1,5 +1,7 @@
 # Tammy
-> Note: The progressive HTTP client for the browser
+> Note: A progressive HTTP client for the browser
+
+[![npm package](https://nodei.co/npm/tammy.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy)
 
 ---
 
