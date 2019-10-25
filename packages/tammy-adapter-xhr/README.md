@@ -10,9 +10,27 @@
 
 ---
 
-## Example
+## Installation
 
----
+### Load `tammy` via classical `<script>` tag
+
+```html
+<script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy-adapter-xhr/umd.min.js"></script>
+```
+
+```javascript
+tammy.http.install(tammyAdapterXhr);
+```
+
+### CommonJS style with npm
+
+```bash
+npm install tammy --save
+
+# for the browser
+npm install tammy-adapter-xhr --save
+```
 
 ```javascript
 

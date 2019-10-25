@@ -10,7 +10,38 @@
 
 ---
 
-## Example
+## Installation
+
+### Load `tammy` via classical `<script>` tag
+
+```html
+<script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy-mock/umd.min.js"></script>
+```
+
+```javascript
+const mock = new TammyMock();
+mock.get('/api/test', (req, res) => {
+  res.json({
+    code: 0,
+    message: 'success'
+  });
+});
+tammy.http.defaults.adapter = mock.getAdapter();
+http('/api/test')
+  .then(function(res) {
+
+  });
+```
+
+### CommonJS style with npm
+
+```bash
+npm install tammy --save
+
+# mock
+npm install tammy-mock --save
+```
 
 ```javascript
 
@@ -26,6 +57,10 @@ mock.get('/api/test', (req, res) => {
   });
 });
 http.defaults.adapter = mock.getAdapter();
+http('/api/test')
+  .then(function(res) {
+
+  });
 
 ```
 

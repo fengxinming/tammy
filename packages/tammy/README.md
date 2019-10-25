@@ -32,13 +32,18 @@
 
 ```html
 <script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy-plugin-xsrf/umd.min.js"></script>
 ```
 
 ### CommonJS style with npm
 
 ```bash
 npm install tammy --save
+
+# for the browser
 npm install tammy-adapter-xhr --save
+
+# Optional
 npm install tammy-plugin-xsrf --save
 ```
 

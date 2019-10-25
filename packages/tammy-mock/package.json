@@ -1,7 +1,7 @@
 {
   "name": "tammy-mock",
-  "version": "1.0.0",
-  "description": "mock data for tammy.",
+  "version": "1.0.1",
+  "description": "mock data for tammy and axios.",
   "main": "./common.js",
   "module": "./esm.js",
   "unpkg": "./umd.js",

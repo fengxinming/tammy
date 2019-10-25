@@ -1,6 +1,6 @@
 'use strict';
 
-const { camelize } = require('celia');
+const { camelize, capitalize } = require('celia');
 const { resolve, releaseDir } = require('../util');
 const pkg = require('../../package.json');
 
@@ -14,7 +14,7 @@ function configure(input, output) {
       }
     },
     outputOptions: {
-      name: camelize(pkg.name),
+      name: capitalize(camelize(pkg.name)),
       file: output,
       format: 'umd',
       legacy: false,

@@ -10,9 +10,25 @@
 
 ---
 
-## Example
+## Installation
 
----
+### Load `tammy` via classical `<script>` tag
+
+```html
+<script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/tammy-plugin-xsrf/umd.min.js"></script>
+```
+
+```javascript
+tammy.http.install(tammyPluginXsrf);
+```
+
+### CommonJS style with npm
+
+```bash
+npm install tammy --save
+npm install tammy-plugin-xsrf --save
+```
 
 ```javascript
 
