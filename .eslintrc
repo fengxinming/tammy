@@ -11,7 +11,8 @@
     "beforeAll": true,
     "afterAll": true,
     "XMLHttpRequest": true,
-    "btoa": true
+    "btoa": true,
+    "process": true
   },
   "rules": {
     "arrow-parens": [
