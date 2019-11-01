@@ -14,7 +14,7 @@ function createInstance(options) {
    * @param {Object|undefined} opts
    */
   const $http = function (url, opts) {
-    return tammy.request(url, opts);
+    return tammy.fetch(url, opts);
   };
 
   /**

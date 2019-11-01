@@ -1,10 +1,13 @@
 import {
-  forOwn, isNil, isString, isFunction, createError,
+  forOwn, isNil, isString, isFunction, createError, joinQuery,
   ECONNRESET, ENETWORK, ECONNABORTED, CONTENT_TYPE
 } from 'tammy';
 
-const rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg;
-const logErr = (console && console.error) || function () { };
+const RHEADERS = /^(.*?):[ \t]*([^\r\n]*)$/mg;
+const RCACHE = /([?&])_=[^&]*/;
+// const RHASH = /#.*$/;
+let nonce = Date.now();
+const warn = (console && (console.warn || console.log)) || function () { };
 
 /**
  * 解析 response headers
@@ -19,7 +22,7 @@ function parseRawHeaders(request, response) {
           const rawHeaders = request.getAllResponseHeaders();
           const parsedHeaders = {};
           let match;
-          while ((match = rheaders.exec(rawHeaders))) {
+          while ((match = RHEADERS.exec(rawHeaders))) {
             parsedHeaders[match[1].toLowerCase()] = match[2];
           }
           this._headers = parsedHeaders;
@@ -34,10 +37,10 @@ export default function (config) {
   return new Promise((resolve, reject) => {
     const {
       method,
-      url,
       data,
       headers,
       auth,
+      cache,
       async,
       timeout,
       responseType,
@@ -45,6 +48,13 @@ export default function (config) {
       onDownloadProgress,
       onUploadProgress
     } = config;
+
+    let { url } = config;
+
+    // 防止浏览器缓存get请求
+    if ((method === 'GET' || method === 'HEAD') && cache === false) {
+      url = joinQuery(url.replace(RCACHE, '$1'), '_=' + (++nonce));
+    }
 
     // HTTP basic authentication
     if (auth) {
@@ -92,14 +102,14 @@ export default function (config) {
           try {
             response.data = JSON.parse(responseData);
           } catch (e) {
-            logErr('Parse data error: ', e);
+            warn('Parse data error: ', e);
           }
         }
         resolve(response);
       } else {
-        reject(createError(`Request failed with status code ${status}`, {
-          code: status
-        }));
+        const err = createError(`Request failed with status code ${status}`, response);
+        err.code = status;
+        reject(err);
       }
 
       request = null;
@@ -164,7 +174,7 @@ export default function (config) {
       try {
         request.responseType = responseType || '';
       } catch (e) {
-        logErr('responseType error: ', e);
+        warn('responseType error: ', e);
       }
     }
 

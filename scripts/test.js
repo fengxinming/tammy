@@ -4,11 +4,17 @@ const { join } = require('path');
 const { exec } = require('./util');
 
 const cwd = process.cwd();
+const [, , name, ...args] = process.argv;
+const packages = ['tammy-adapter-xhr', 'tammy-plugin-xsrf', 'tammy-mock'];
 
-['tammy-adapter-xhr', 'tammy-plugin-xsrf', 'tammy-mock'].forEach(
+packages.forEach(
   (packageName) => {
+    if (name && name !== packageName) {
+      return;
+    }
     process.chdir(join(__dirname, '..', 'packages', packageName));
-    exec(['run', 'test']);
+    const testArgs = name !== packageName ? [] : args;
+    exec(['run', 'test', ...testArgs]);
   }
 );
 

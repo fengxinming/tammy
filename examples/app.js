@@ -17,13 +17,12 @@ router.get('/tammy-adapter-xhr.js', (ctx) => {
   ctx.body = readFileSync(join(__dirname, '..', 'packages', 'tammy-adapter-xhr', 'npm', 'umd.js'));
   ctx.type = 'application/javascript; charset=utf-8';
 });
-router.get('/api/sleep200', async (ctx) => {
-  await sleep(200);
+router.get('/api/sleep/:code', async (ctx) => {
+  await sleep(+ctx.params.code);
   ctx.body = { code: 200 };
 });
-router.get('/api/sleep2000', async (ctx) => {
-  await sleep(2000);
-  ctx.body = { code: 200 };
+router.get('/api/json', (ctx) => {
+  ctx.body = { code: 200, message: 'success' };
 });
 app.use(serve(join(__dirname, 'public')));
 app.use(router.middleware());

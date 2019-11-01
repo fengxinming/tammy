@@ -11,7 +11,7 @@ import loop from 'celia/_loop';
 import remove from 'celia/remove';
 import removeAt from 'celia/removeAt';
 import noop from 'celia/noop';
-import { EREQCANCELLED } from './constants';
+import { EREQCANCELLED, CONTENT_TYPES } from './constants';
 
 export {
   isNil,
@@ -58,19 +58,6 @@ export function merge(result) {
 }
 
 /**
- * 对象转表单字符串
- * @param {Object} obj
- */
-export function formify(obj) {
-  const form = [];
-  let i = 0;
-  forOwn(obj, (val, key) => {
-    form[i++] = `${key}=${val}`;
-  });
-  return form.join('&');
-}
-
-/**
  * 拼接querystring
  * @param {String} url
  * @param {String} qs
@@ -92,20 +79,6 @@ export function createError(message, options) {
   return error;
 }
 
-// /**
-//  * 序列化header
-//  * @param {Object} headers
-//  * @param {String} normalizedName
-//  */
-// export function normalizeHeaderName(headers, normalizedName) {
-//   forOwn(headers, (value, name) => {
-//     if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
-//       headers[normalizedName] = value;
-//       delete headers[name];
-//     }
-//   });
-// }
-
 /**
  * 是否是主动中断请求异常
  * @param {Error} e
@@ -119,4 +92,28 @@ export function isCancelled(e) {
  */
 export function uuid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+/**
+ * 转换成真正的Content-Type
+ * @param {String} type
+ */
+
+export function toContentType(type) {
+  return type && CONTENT_TYPES[type];
+}
+
+/**
+ * content type 转 request type
+ * @param {String} contentType
+ */
+export function toRequestType(contentType) {
+  if (contentType) {
+    if (contentType.indexOf('application/x-www-form-urlencoded') === 0) {
+      return 'form';
+    } else if (contentType.indexOf('application/json') === 0) {
+      return 'json';
+    } else if (contentType.indexOf('multipart/form-data') === 0) {
+      return 'form-data';
+    }
+  }
 }

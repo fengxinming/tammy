@@ -3,6 +3,15 @@
 
 <head>
   <title>Tammy</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="/css/layui.css" media="all">
+  <style>
+    .layui-form {
+      margin: 50px auto;
+    }
+  </style>
   <script type="text/javascript" src="/tammy.js"></script>
   <script type="text/javascript" src="/tammy-adapter-xhr.js"></script>
   <script type="text/javascript">
@@ -10,38 +19,85 @@
     var cancel = tammy.cancel;
     var token, token2;
     http.defaults.adapter = tammyAdapterXhr;
-    http({
-      url: '/tammy-adapter-xhr.js',
-      responseType: 'text'
-    }).then(function (res) {
-      console.log(res);
-    });
-    http({
-      url: '/api/sleep200',
-      cancelToken: function (t) {
-        token = t;
-      }
-    }).catch(function (err) {
-      console.log(1, err);
-    });
-    cancel(token, '中断请求');
 
-    http({
-      url: '/api/sleep2000',
-      cancelToken: function (t) {
-        token2 = t;
+    function callApi(button, options) {
+      const node = button.parentNode.nextElementSibling;
+      let token;
+      node.innerHTML = 'loading...';
+      const promise = http(Object.assign({
+        url: button.parentNode.previousElementSibling.firstElementChild.value,
+        cancelToken: function (t) {
+          token = t;
+        }
+      }, options)).then(function (res) {
+        node.innerHTML = typeof res.data + ': ' + JSON.stringify(res.data);
+      }, function (err) {
+        node.innerHTML = 'Error: ' + err.message;
+      });
+      return { token: token, promise: promise };
+    }
+    function fetchText(button) {
+      callApi(button, {
+        responseType: 'text'
+      });
+    }
+
+    function fetchJSON(button) {
+      callApi(button);
+    }
+
+    function fetchDeferredJSON(button) {
+      const ret = callApi(button);
+      button.nextElementSibling.token = ret.token;
+    }
+    function stopDeferredFetch(button) {
+      const token = button.token;
+      if (token) {
+        cancel(token, '主动中断请求');
+        button.token = null;
       }
-    }).catch(function (err) {
-      console.log(2, err);
-    });
-    setTimeout(function () {
-      cancel(token2, '中断请求2');
-    }, 1000);
+    }
   </script>
 </head>
 
 <body>
-  <div></div>
+  <div class="layui-main">
+    <form class="layui-form" action="">
+      <div class="layui-form-item">
+        <label class="layui-form-label">获取文本</label>
+        <div class="layui-input-inline">
+          <input class="layui-input" type="text" name="title" lay-verify="title" autocomplete="off" value="/api/json">
+        </div>
+        <div class="layui-inline">
+          <button type="button" class="layui-btn" onclick="fetchText(this)">请求接口</button>
+        </div>
+        <div class="layui-inline layui-word-aux"></div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">获取JSON</label>
+        <div class="layui-input-inline">
+          <input class="layui-input" type="text" name="title" lay-verify="title" autocomplete="off" value="/api/json">
+        </div>
+        <div class="layui-inline">
+          <button type="button" class="layui-btn" onclick="fetchJSON(this)">请求接口</button>
+        </div>
+        <div class="layui-inline layui-word-aux"></div>
+      </div>
+
+      <div class="layui-form-item">
+        <label class="layui-form-label">中断请求</label>
+        <div class="layui-input-inline">
+          <input class="layui-input" type="text" name="title" lay-verify="title" autocomplete="off"
+            value="/api/sleep/60000">
+        </div>
+        <div class="layui-inline">
+          <button type="button" class="layui-btn" onclick="fetchDeferredJSON(this)">请求接口</button>
+          <button type="button" class="layui-btn" onclick="stopDeferredFetch(this)">终止请求</button>
+        </div>
+        <div class="layui-inline layui-word-aux"></div>
+      </div>
+    </form>
+  </div>
 </body>
 
 </html>

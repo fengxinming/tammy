@@ -1,6 +1,6 @@
 {
   "name": "tammy-adapter-xhr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The progressive HTTP client for the browser.",
   "main": "./common.js",
   "module": "./esm.js",
@@ -18,11 +18,10 @@
     "xhr",
     "XMLHttpRequest",
     "ajax",
-    "fetch",
-    "axios",
-    "http",
+    "tammy",
     "promise",
-    "node"
+    "fetch",
+    "axios"
   ],
   "author": "Jesse Feng",
   "license": "MIT",

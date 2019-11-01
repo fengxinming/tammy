@@ -4,17 +4,17 @@ import {
   isObject,
   isAbsoluteURL,
   joinPath,
-  formify,
   stringifyQuery,
-  joinQuery
+  joinQuery,
+  toContentType,
+  toRequestType
 } from './util';
-import { CONTENT_TYPE, CONTENT_TYPES } from './constants';
+import { CONTENT_TYPE, CT_FORM } from './constants';
 import { getToken } from './cancel';
 import interceptors from './interceptors';
 
-let nonce = Date.now();
 const { stringify } = JSON;
-const RCACHE = /([?&]_=)[^&]*/;
+
 /**
  * 请求接口
  * @param {Object} options
@@ -27,7 +27,7 @@ function dispatchRequest(config) {
     method,
     qs,
     data,
-    cache,
+    requestType,
     adapter
   } = config;
 
@@ -44,31 +44,29 @@ function dispatchRequest(config) {
   // 参数处理
   switch (method) {
     case 'HEAD':
-    case 'DELETE':
     case 'GET':
+    case 'DELETE':
       // 兼容data参数
       if (data) {
         url = joinQuery(url, isObject(data) ? stringifyQuery(data) : data);
-      }
-
-      // 禁用缓存
-      if (cache === false) {
-        nonce++;
-        const newUrl = url.replace(RCACHE, `$1${nonce}`);
-        // url上未使用缓存标识
-        if (newUrl === url) {
-          url = joinQuery(url, '_=' + nonce);
-        }
+        delete config.data;
       }
       break;
     case 'POST':
-    case 'PUT':
-    case 'PATCH':
+      // 处理 requestType
+      if (requestType) {
+        const contentType = toContentType(requestType);
+        if (contentType) {
+          headers[CONTENT_TYPE] = contentType;
+        }
+      } else {
+        config.requestType = requestType = toRequestType(headers[CONTENT_TYPE]);
+      }
       // 校验post数据格式
       if (isObject(data)) {
-        config.data = !(headers[CONTENT_TYPE] || '').indexOf('application/json')
+        config.data = requestType === 'json'
           ? stringify(data)
-          : formify(data);
+          : stringifyQuery(data);
       }
       break;
   }
@@ -113,7 +111,7 @@ export default class Tammy {
 
     ['post', 'put', 'patch'].forEach((method) => {
       headers[method] = {
-        'Content-Type': CONTENT_TYPES.form
+        'Content-Type': CT_FORM
       };
     });
   }
@@ -123,7 +121,7 @@ export default class Tammy {
    * @param {String|Object} url
    * @param {Object|undefined} opts
    */
-  request(url, opts) {
+  fetch(url, opts) {
     // 统一参数
     if (isObject(url)) {
       opts = url;
@@ -132,34 +130,29 @@ export default class Tammy {
     // 合并全局参数
     opts = merge({ url }, this.defaults, opts);
 
-    let { method, headers, contentType, cancelToken } = opts;
+    let { method, headers, cancelToken } = opts;
+
     method = method ? method.toUpperCase() : 'GET';
 
     // 合并headers
-    headers = merge({}, this.headers.common, this.headers[method], headers);
-    if ((contentType = contentType && CONTENT_TYPES[contentType])) {
-      headers[CONTENT_TYPE] = contentType;
-    }
+    headers = merge({}, this.headers.common, this.headers[method.toLowerCase()], headers);
 
-    const _cancelToken = getToken();
-
-    if (isFunction(cancelToken)) {
-      cancelToken(_cancelToken.id);
-    }
+    // 自定义保存cancelToken id
+    const token = getToken();
+    isFunction(cancelToken) && cancelToken(token.id);
 
     opts.method = method;
     opts.headers = headers;
-    opts.cancelToken = _cancelToken;
+    opts.cancelToken = token;
 
     const { interceptors } = this;
     let promise = Promise.resolve(opts);
-    interceptors.request.forEach(({ fulfilled, rejected }) => {
+    const promisify = ({ fulfilled, rejected }) => {
       promise = promise.then(fulfilled, rejected);
-    });
+    };
+    interceptors.request.forEach((promisify));
     promise = promise.then(dispatchRequest);
-    interceptors.response.forEach(({ fulfilled, rejected }) => {
-      promise = promise.then(fulfilled, rejected);
-    });
+    interceptors.response.forEach((promisify));
 
     return promise;
   }
