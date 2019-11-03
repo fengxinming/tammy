@@ -1,7 +1,7 @@
 {
   "name": "tammy-adapter-xhr",
-  "version": "1.0.1",
-  "description": "The progressive HTTP client for the browser.",
+  "version": "1.0.2",
+  "description": "A progressive HTTP client for the browser.",
   "main": "./common.js",
   "module": "./esm.js",
   "unpkg": "./umd.js",
@@ -28,8 +28,5 @@
   "bugs": {
     "url": "https://github.com/fengxinming/tammy/issues"
   },
-  "homepage": "https://github.com/fengxinming/tammy#readme",
-  "dependencies": {
-    "tammy": "^1.1.0"
-  }
+  "homepage": "https://github.com/fengxinming/tammy#readme"
 }

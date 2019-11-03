@@ -2,7 +2,7 @@
 
 [![npm package](https://nodei.co/npm/tammy.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/tammy)
 
-> Note: 基于promise用于浏览器和node.js的http客户端
+> Note: Promise based HTTP client for the browser and node.js
 
 [![NPM version](https://img.shields.io/npm/v/tammy.svg?style=flat)](https://npmjs.org/package/tammy)
 [![NPM Downloads](https://img.shields.io/npm/dm/tammy.svg?style=flat)](https://npmjs.org/package/tammy)
@@ -10,26 +10,25 @@
 
 ---
 
-## 目录
+## Table of contents
 
-  - [安装](#安装)
-  - [用法](#用法)
+  - [Installation](#Installation)
+  - [Usage](#Usage)
   - [Tammy API](#Tammy-API)
-  - [配置参数](#配置参数)
-  - [Response 结构](#Response-结构)
-  - [默认参数](#默认参数)
-  - [拦截器](#拦截器)
-  - [异常处理](#异常处理)
+  - [Request Options](#Request-Options)
+  - [Options Defaults](#Options-Defaults)
+  - [Interceptors](#Interceptors)
+  - [Handling Errors](#Handling-Errors)
   - [CancelToken](#CancelToken)
-  - [插件](#插件)
-  - [适配器](#适配器)
+  - [Plugin](#Plugin)
+  - [Adapter](#Adapter)
   - [License](#License)
 
 ---
 
-## 安装
+## Installation
 
-### 使用传统的 `<script>` 标签加载 `tammy`
+### Load `tammy` via classical `<script>` tag
 
 ```html
 <script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
@@ -37,26 +36,26 @@
 <script src="//cdn.jsdelivr.net/npm/tammy-plugin-xsrf/umd.min.js"></script>
 ```
 
-### 使用 CommonJS 方式导入
+### CommonJS style with npm
 
 ```bash
 npm install tammy --save
 
-# 浏览器环境
+# for the browser
 npm install tammy-adapter-xhr --save
 
-# nodejs环境
+# for nodejs
 npm install tammy-adapter-request --save
 
-# 可选
+# Optional
 npm install tammy-plugin-xsrf --save
 ```
 
 ---
 
-## 用法
+## Usage
 
-执行一个 `GET` 请求
+Performing a `GET` request
 
 ```js
 import { http } from 'tammy';
@@ -66,10 +65,15 @@ http.defaults.adapter = xhr;
 // Make a request for a user with a given ID
 http.get('/user?ID=12345')
   .then(function (response) {
-    // 处理成功情况
+    // handle success
+    console.log(response);
   })
   .catch(function (error) {
-    // 处理异常情况
+    // handle error
+    console.log(error);
+  })
+  .then(function () {
+    // always executed
   });
 
 // Optionally the request above could also be done as
@@ -79,13 +83,16 @@ http.get('/user', {
   }
 })
 .then(function (response) {
-    // 处理成功情况
+  console.log(response);
 })
 .catch(function (error) {
-  // 处理异常情况
-});
+  console.log(error);
+})
+.then(function () {
+  // always executed
+});  
 
-// 使用 async/await
+// Want to use async/await? Add the `async` keyword to your outer function/method.
 async function getUser() {
   try {
     const response = await http.get('/user?ID=12345');
@@ -96,9 +103,10 @@ async function getUser() {
 }
 ```
 
-> **NOTE:** `async/await` 是 ECMAScript 2017 的一部分, 浏览器不一定都支持
+> **NOTE:** `async/await` is part of ECMAScript 2017 and is not supported in Internet
+> Explorer and older browsers, so use with caution.
 
-执行一个 `POST` 请求
+Performing a `POST` request
 
 ```js
 import { http } from 'tammy';
@@ -115,7 +123,7 @@ request.post('/user', {
 });
 ```
 
-执行多个并发请求
+Performing multiple concurrent requests
 
 ```js
 import { http } from 'tammy';
@@ -207,7 +215,7 @@ import {
 
 ```
 
-通过相关配置发起请求
+Requests can be made by passing the relevant options to `http`.
 
 #### http(options)
 
@@ -236,7 +244,9 @@ import { http } from 'tammy';
 http('/user/12345');
 ```
 
-### 请求方法别名
+### Request method aliases
+
+For convenience aliases have been provided for all supported request methods.
 
 #### http(options)
 #### http.get(url[, data[, options]])
@@ -249,15 +259,11 @@ http('/user/12345');
 #### http.patch(url[, data[, options]])
 
 > NOTE: 
-当使用以上别名方法时，`url`，`method`和`data`等属性不用在config重复声明。
+When using the alias methods `url`, `method`, and `data` properties don't need to be specified in options.
 
-### 执行多个并发请求
+### Creating an instance
 
-http.all([ ...options ])
-
-### 创建一个实例
-
-创建一个拥有通用配置的 `tammy` 实例
+You can create a new instance of tammy with a custom options.
 
 #### create([options])
 
@@ -273,8 +279,9 @@ const instance = create({
 });
 ```
 
-### 实例方法别名
+### Instance methods
 
+The available instance methods are listed below. The specified options will be merged with the instance options.
 
 #### instance(options)
 #### instance.get(url[, data[, options]])
@@ -288,19 +295,30 @@ const instance = create({
 
 ---
 
-## 配置参数
+## Request Options
 
-下面是可用配置项, 只有 `url` 必填, 如果没有指定方法, 就默认 `GET` 方法
+These are the available options for making requests. Only the `url` is required. Requests will default to `GET` if `method` is not specified.
 
-- `url` - 请求地址.
-- `baseUrl` - 跟路径，将会跟 `url` 拼接.
-- `method` - 请求方法 (默认值: `"GET"`).
-- `headers` - 自定义请求头 (默认值: `{'Accept': 'application/json, text/plain, */*'}`).
-- `qs` - `url` 拼接参数, 必须是一个对象或者一个 query string 字符串.
-- `data` - 如果是 `GET` 请求, 将转成 query string; 如果是 `POST` 请求, 将根据 content-type 转成 query string 或者 json string.
-- `cache` - 如果设置为 `false`, 将在 `url` 后增加时间戳, 当 `method` 是 `HEAD`、`DELETE` 或 `GET`.
-- `timeout` - 请求超时毫秒数 (默认值: `0` 无超时).
-- `adapter` - 自定义适配不同环境 (参考 https://github.com/fengxinming/tammy/blob/dev/packages/tammy-adapter-xhr/src/index.js).
+- `url` - the server url will be used for the request.
+- `baseUrl` - fully qualified uri string used as the base url, for example when you want to do many requests to the same domain. If `baseUrl` is `https://example.com/api/`, then requesting `/end/point?test=true` will fetch `https://example.com/api/end/point?test=true`. When `baseUrl` is given, `uri` must also be a string.
+- `method` - the request method can be used when making the request (default: `"GET"`).
+- `headers` - custom headers can be sent (default: `{'Accept': 'application/json, text/plain, */*'}`).
+
+```javascript
+{
+  headers: {'X-Requested-With': 'XMLHttpRequest'}
+}
+```
+
+- `qs` - the url parameters can be sent with the request that is a plain object or query string.
+- `data` - the data can be sent as the request body(object、json string or form string), and it is also compatible with `qs` when `qs` is null.
+- `cache` - set `false` that `url` will be appended timestamp if `method` is `HEAD` `DELETE` or `GET`
+- `timeout` - integer containing number of milliseconds, controls two timeouts (default: `0` no timeout).
+  - **Read timeout**: Time to wait for a server to send response headers (and start the response body) before aborting the request.
+  - **Connection timeout**: Sets the socket to timeout after `timeout` milliseconds of inactivity. Note that increasing the timeout beyond the OS-wide TCP connection timeout will not have any effect ([the default in Linux can be anywhere from 20-120 seconds][linux-timeout])
+
+[linux-timeout]: http://www.sekuda.com/overriding_the_default_linux_kernel_20_second_tcp_socket_connect_timeout
+- `adapter` - allows custom handling of requests which makes testing easier. Return a promise and supply a valid response (see https://github.com/fengxinming/tammy/blob/master/src/adapters/xhr.js).
 
 ```javascript
 {
@@ -310,17 +328,17 @@ const instance = create({
 }
 ```
 
-- `validateStatus` - 校验 HTTP 响应状态码 (默认值: `(status >= 200 && status < 300) || status === 304`.
+- `validateStatus` - defines whether to resolve or reject the promise for a given HTTP response status code. If `validateStatus` returns `true` (or is set to `null` or `undefined`), the promise will be resolved; otherwise, the promise will be rejected (default: `(status >= 200 && status < 300) || status === 304`.
 
 ```javascript
 {
   validateStatus: function (status) {
-    // 校验状态码并返回 bool 值
+    return (status >= 200 && status < 300) || status === 304; // default
   }
 }
 ```
 
-- `cancelToken` - 保存 token 用于中断请求.
+- `cancelToken` - specifies a cancel token that can be used to abort the request (see CancelToken section below for details)
 
 ```javascript
 let cancelToken;
@@ -333,13 +351,12 @@ let cancelToken;
 }
 ```
 
-- `requestType` - 简化设置 content-type, 可选值包括: ‘form’、'json'或'form-data'
-- `responseType` - 设置响应数据类型, 可选值包括 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream' (默认值: `"json"`).
+- `responseType` - indicates the type of data that the server will respond with options are 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream' (default: `"json"`).
 
 ---
 
-- `withCredentials` - 是否携带cookie信息 (默认值: `false`).
-- `auth` - HTTP Basic auth
+- `withCredentials` - indicates whether or not cross-site Access-Control requests (default: `false`).
+- `auth` - indicates that HTTP Basic auth should be used, and supplies credentials. This will set an `Authorization` header, overwriting any existing `Authorization` custom headers you have set using `headers`. before setting `auth` you must preload `auth plugin` (see Installation section below for details)
 
 ```javascript
 {
@@ -350,9 +367,9 @@ let cancelToken;
 }
 ```
 
-- `xsrfCookieName` xsrf token 名称 (默认值: `"XSRF-TOKEN"`).
-- `xsrfHeaderName` xsrf token 值 (默认值: `"X-XSRF-TOKEN"`).
-- `onUploadProgress` - 处理上传进度事件.
+- `xsrfCookieName` the name of the cookie use as a value for xsrf token (default: `"XSRF-TOKEN"`).
+- `xsrfHeaderName` the name of the http header that carries the xsrf token value (default: `"X-XSRF-TOKEN"`).
+- `onUploadProgress` - allows handling of progress events for uploads.
 
 ```javascript
 {
@@ -362,7 +379,7 @@ let cancelToken;
 }
 ```  
 
-- `onDownloadProgress` - 处理下载进度事件.
+- `onDownloadProgress` - allows handling of progress events for downloads.
 
 ```javascript
 {
@@ -374,33 +391,36 @@ let cancelToken;
 
 ---
 
-## Response 结构
+## Response Schema
 
-Response 包含以下信息.
+The response for a request contains the following information.
 
 ```javascript
 {
-  // `data` 服务端返回的数据
+  // `data` is the response that was provided by the server
   data: {},
 
-  // `status` 服务端返回的状态码
+  // `status` is the HTTP status code from the server response
   status: 200,
 
-  // `statusText` 服务端返回的状态信息
+  // `statusText` is the HTTP status message from the server response
   statusText: 'OK',
 
-  // `headers` 响应头
+  // `headers` the headers that the server responded with
+  // All header names are lower cased
   headers: {},
 
-  // `config` 请求配置
+  // `config` is the config that was provided to `tammy` for the request
   config: {},
 
-  // `request` 请求对象
+  // `request` is the request that generated this response
+  // It is the last ClientRequest instance in node.js (in redirects)
+  // and an XMLHttpRequest instance the browser
   request: {}
 }
 ```
 
-使用 `then` 接受 response 相关信息
+When using `then`, you will receive the response as follows:
 
 ```js
 import { http } from 'tammy';
@@ -415,57 +435,68 @@ http.get('/user/12345')
   });
 ```
 
-使用 `catch` 接受异常信息 [rejection callback](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then), 可见 [异常处理](#Handling-Errors) 区域.
+When using `catch`, or passing a [rejection callback](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) as second parameter of `then`, the response will be available through the `error` object as explained in the [Handling Errors](#handling-errors) section.
 
-## 默认参数
+## Options Defaults
 
-### 全局 http 默认配置
+You can specify config defaults that will be applied to every request.
+
+### Global http defaults
 
 ```js
-import { http, CT_FORM } from 'tammy';
+import { http } from 'tammy';
 
 http.defaults.baseUrl = 'https://api.example.com';
-http.headers.common.Authorization = 'authtoken';
-http.headers.post['Content-Type'] = CT_FORM;
-```
-
-### 定制 http 实例
-
-```js
-import { create } from 'tammy';
-
-const instance = create({
-  baseUrl: 'https://api.example.com',
-  Authorization: 'authtoken'
+http.headers.common.Authorization = AUTH_TOKEN;
+http.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 });
 ```
 
-### 配置优先级
-
-配置项通过一定的规则合并, request配置将覆盖instance.defaults配置.
+### Custom instance defaults
 
 ```js
+// Set config defaults when creating the instance
+import { create } from 'tammy';
+
+const instance = create({
+  baseUrl: 'https://api.example.com'
+});
+
+// Alter defaults after instance has been created
+instance.headers.common.Authorization = AUTH_TOKEN;
+```
+
+### Config order of precedence
+
+Config will be merged with an order of precedence. The order is library defaults found in [lib/Tammy.js](https://github.com/tammy/tammy/blob/master/lib/Tammy.js#L91), then `defaults` property of the instance, and finally `config` argument for the request. The latter will take precedence over the former. Here's an example.
+
+```js
+// Create an instance using the config defaults provided by the library
+// At this point the timeout config value is `0` as is the default for the library
+
 import { create } from 'tammy';
 
 const instance = create();
 
+// Override timeout default for the library
+// Now all requests using this instance will wait 2.5 seconds before timing out
 instance.defaults.timeout = 2500;
 
-// timeout 将覆盖 instance.defaults.timeout
+// Override timeout for this request as it's known to take a long time
 instance.get('/longRequest', {
   timeout: 5000
 });
 ```
 
-## 拦截器
+## Interceptors
 
-增加全局 http 拦截器
+You can intercept requests or responses before they are handled by `then` or `catch`.
 
 ```js
 // Add a request interceptor
 import { http } from 'tammy';
 
-const interceptorId = http.interceptors.request.use(function(config) {
+const interceptorId = http.interceptors.request.use(function({ interceptors }) {
   // Do something before request is sent
   return config;
 }, function (error) {
@@ -483,15 +514,14 @@ http.interceptors.response.use(function (response) {
 });
 ```
 
-通过 id 或下标移除拦截器
+If you may need to remove a interceptor later you can.
 
 ```js
 http.interceptors.request.eject(interceptorId);
-// 或者
-http.interceptors.request.eject(0);
+http.interceptors.request.eject(1);
 ```
 
-增加定制 http 拦截器
+You can add interceptors to a custom instance of tammy.
 
 ```js
 import { create } from 'tammy';
@@ -516,7 +546,7 @@ instance.interceptors.request.use(function (response) {
 });
 ```
 
-## 异常处理
+## Handling Errors
 
 ```js
 http.get('/user/12345')
@@ -540,7 +570,7 @@ http.get('/user/12345')
   });
 ```
 
-校验 HTTP 状态码
+You can define a custom HTTP status code error range using the `validateStatus` config option.
 
 ```js
 http.get('/user/12345', {
@@ -552,7 +582,7 @@ http.get('/user/12345', {
 
 ## CancelToken
 
-使用 cancel 方法中断请求
+You can cancel a request using a *CancelToken*.
 
 ```js
 let cancelToken;
@@ -580,14 +610,15 @@ http.cancel(cancelToken, 'Operation aborted by the user.');
 http.cancelAll();
 ```
 
-## 插件
+> Note: you can abort several requests.
+
+## Plugin
 
 - [xsrf](https://github.com/fengxinming/tammy/tree/master/packages/tammy-plugin-xsrf)
 
-## 适配器
+## Adapter
 
 - [xhr](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-xhr)
-- [request](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-request)
 - [mock](https://github.com/fengxinming/tammy/tree/master/packages/tammy-mock)
 
 ## License

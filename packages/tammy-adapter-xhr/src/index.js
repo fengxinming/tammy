@@ -44,6 +44,7 @@ export default function (config) {
       async,
       timeout,
       responseType,
+      validateStatus,
       cancelToken,
       onDownloadProgress,
       onUploadProgress
@@ -97,7 +98,7 @@ export default function (config) {
 
       parseRawHeaders(request, response);
 
-      if (config.validateStatus(status)) {
+      if (!validateStatus || validateStatus(status)) {
         if (responseType === 'json' && isString(responseData)) {
           try {
             response.data = JSON.parse(responseData);
@@ -154,6 +155,7 @@ export default function (config) {
 
     // 增加 headers
     if (isFunction(request.setRequestHeader)) {
+      headers['X-Requested-With'] = 'XMLHttpRequest';
       forOwn(headers, (val, key) => {
         if (isNil(data) && key === CONTENT_TYPE) {
           // 如果data为空，就移除content-type

@@ -16,17 +16,20 @@ import { Response } from './Response';
 
 function compose(middleware) {
   return function (req, res, next) {
+    let index = -1;
     const dispatch = function (i) {
+      if (i <= index) {
+        throw new Error('next() called multiple times');
+      }
+      index = i;
       let fn = middleware[i];
       if (i < middleware.length) {
         try {
-          fn(req, res, (function (j) {
-            return function (e) {
-              e
-                ? next(e)
-                : dispatch(j);
-            };
-          })(i + 1));
+          fn(req, res, (e) => {
+            e
+              ? next(e)
+              : dispatch(i + 1);
+          });
         } catch (e) {
           next(e);
         }

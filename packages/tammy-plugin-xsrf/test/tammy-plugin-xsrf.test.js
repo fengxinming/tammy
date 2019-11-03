@@ -3,7 +3,7 @@ import xsrf from '../src';
 import xhr from '../../tammy-adapter-xhr/src';
 import { makeXHR } from '../../../test/util';
 
-describe('测试 xsrf', () => {
+describe('测试 tammy-plugin-xsrf', () => {
 
   let url = 'https://github.com/fengxinming?cat=famous&count=10';
 

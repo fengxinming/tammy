@@ -20,25 +20,19 @@ const { stringify } = JSON;
  * @param {Object} options
  */
 function dispatchRequest(config) {
-  let {
-    url,
-    baseUrl,
-    headers,
-    method,
-    qs,
-    data,
-    requestType,
-    adapter
-  } = config;
+  const { baseUrl, headers, method, qs, data, adapter } = config;
+  let { url, requestType } = config;
 
   // 拼接根路由
   if (baseUrl && !isAbsoluteURL(url)) {
     url = joinPath(baseUrl, url);
+    delete config.baseUrl;
   }
 
   // 拼接查询参数
   if (qs) {
     url = joinQuery(url, isObject(qs) ? stringifyQuery(qs) : qs);
+    delete config.qs;
   }
 
   // 参数处理
@@ -141,6 +135,8 @@ export default class Tammy {
     const token = getToken();
     isFunction(cancelToken) && cancelToken(token.id);
 
+    opts.baseUrl = opts.baseUrl || opts.baseURL;
+    opts.qs = opts.qs || opts.params;
     opts.method = method;
     opts.headers = headers;
     opts.cancelToken = token;

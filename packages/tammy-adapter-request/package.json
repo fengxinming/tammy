@@ -1,13 +1,9 @@
 {
-  "name": "tammy-plugin-xsrf",
+  "name": "tammy-adapter-request",
   "version": "1.0.0",
-  "description": "A tammy plugin for xsrf.",
-  "main": "./common.js",
-  "module": "./esm.js",
-  "unpkg": "./umd.js",
-  "jsdelivr": "./umd.js",
+  "description": "A tammy adapter for making http calls with request module.",
+  "main": "index.js",
   "scripts": {
-    "build": "node ./scripts/build.js",
     "test": "jest --detectOpenHandles --config jest.config.js"
   },
   "repository": {
@@ -16,13 +12,20 @@
   },
   "keywords": [
     "tammy",
-    "xsrf",
-    "axios"
+    "request",
+    "promise",
+    "fetch",
+    "axios",
+    "node"
   ],
   "author": "Jesse Feng",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fengxinming/tammy/issues"
   },
-  "homepage": "https://github.com/fengxinming/tammy#readme"
+  "homepage": "https://github.com/fengxinming/tammy#readme",
+  "dependencies": {
+    "request": "^2.88.0",
+    "request-progress": "^3.0.0"
+  }
 }
