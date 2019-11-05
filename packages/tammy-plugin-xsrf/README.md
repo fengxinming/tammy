@@ -34,7 +34,7 @@ npm install tammy-plugin-xsrf --save
 
 // es6
 import { http } from 'tammy';
-import xsrf from 'tammy-plugin-xsrf;
+import xsrf from 'tammy-plugin-xsrf';
 
 http.install(xsrf);
 

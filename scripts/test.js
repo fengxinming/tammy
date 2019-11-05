@@ -13,8 +13,7 @@ packages.forEach(
       return;
     }
     process.chdir(join(__dirname, '..', 'packages', packageName));
-    const testArgs = name !== packageName ? [] : args;
-    exec(['run', 'test', ...testArgs]);
+    exec(['run', 'test', ...args]);
   }
 );
 

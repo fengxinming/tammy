@@ -12,23 +12,10 @@
 
 ## Installation
 
-### Load `tammy` via classical `<script>` tag
-
-```html
-<script src="//cdn.jsdelivr.net/npm/tammy/umd.min.js"></script>
-<script src="//cdn.jsdelivr.net/npm/tammy-adapter-request/umd.min.js"></script>
-```
-
-```javascript
-tammy.http.install(tammyAdapterRequest);
-```
-
-### CommonJS style with npm
-
 ```bash
 npm install tammy --save
 
-# for the browser
+# for the nodejs
 npm install tammy-adapter-request --save
 ```
 

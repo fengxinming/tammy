@@ -582,13 +582,13 @@ http.cancelAll();
 
 ## 插件
 
-- [xsrf](https://github.com/fengxinming/tammy/tree/master/packages/tammy-plugin-xsrf)
+- [tammy-plugin-xsrf](https://github.com/fengxinming/tammy/tree/master/packages/tammy-plugin-xsrf)
 
 ## 适配器
 
-- [xhr](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-xhr)
-- [request](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-request)
-- [mock](https://github.com/fengxinming/tammy/tree/master/packages/tammy-mock)
+- [tammy-adapter-xhr](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-xhr)
+- [tammy-adapter-request](https://github.com/fengxinming/tammy/tree/master/packages/tammy-adapter-request)
+- [tammy-mock](https://github.com/fengxinming/tammy/tree/master/packages/tammy-mock)
 
 ## License
 
