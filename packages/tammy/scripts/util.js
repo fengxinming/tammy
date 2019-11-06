@@ -122,7 +122,7 @@ async function print(file, code, isProd) {
  * @param {String} isProd
  */
 async function write(file, code, isProd) {
-  await print(file, code, isProd);
+  await print(file, code);
   if (isProd) {
     file = file.replace('.js', '.min.js');
     code = minify(code, {

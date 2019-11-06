@@ -1,7 +1,9 @@
-import nativeHttp from 'http';
-import { http, cancel, cancelAll, isCancelled, CT_JSON } from '../../tammy/src';
-import requestAdapter from '../index';
-import { sleep, _repeat } from 'celia';
+'use strict';
+
+const nativeHttp = require('http');
+const { http, cancel, cancelAll, isCancelled, CT_JSON } = require('../../tammy/src');
+const requestAdapter = require('../index');
+const { sleep, _loop } = require('celia');
 
 describe('测试 tammy-adapter-request', () => {
 
@@ -162,7 +164,7 @@ describe('测试 tammy-adapter-request', () => {
 
 function randomPhoneNo() {
   let phone = '13';
-  _repeat(0, 10, () => {
+  _loop(0, 10, () => {
     phone += Math.random() * 10 >>> 0;
   });
   return phone;
@@ -170,7 +172,7 @@ function randomPhoneNo() {
 
 function randomCode() {
   let code = '';
-  _repeat(0, 4, () => {
+  _loop(0, 4, () => {
     code += Math.random() * 10 >>> 0;
   });
   return code;

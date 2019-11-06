@@ -170,7 +170,7 @@ request.all([{
   - isString
   - joinPath
   - joinQuery
-  - loop
+  - iterate
   - merge
   - noop
   - remove
@@ -204,7 +204,7 @@ import {
   isString,
   joinPath,
   joinQuery,
-  loop,
+  iterate,
   merge,
   noop,
   remove,

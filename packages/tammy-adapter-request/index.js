@@ -44,7 +44,7 @@ function buildConfig(config) {
   return reqConfig;
 }
 
-export default function (config) {
+module.exports = function (config) {
   return new Promise((resolve, reject) => {
     const reqConfig = buildConfig(config);
     const { requestType, onDownloadProgress, validateStatus, cancelToken } = config;
@@ -120,4 +120,4 @@ export default function (config) {
       req = null;
     });
   });
-}
+};

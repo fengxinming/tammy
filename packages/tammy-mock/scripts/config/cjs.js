@@ -7,8 +7,8 @@ function configure(input, output) {
   return {
     inputOptions: {
       input,
-      external: (id) => {
-        return /^tammy/.test(id);
+      external(id) {
+        return /^(tammy)|(celia)|(qs-like)|(mime)|(path-to-regexp)/.test(id);
       }
     },
     outputOptions: {

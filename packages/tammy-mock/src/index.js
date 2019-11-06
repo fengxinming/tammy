@@ -2,7 +2,7 @@ import {
   isFunction,
   isString,
   isAbsoluteURL,
-  loop,
+  iterate,
   createError,
   ECONNRESET
 } from 'tammy';
@@ -74,7 +74,7 @@ class Mock {
           name = null;
         }
         middleware = [];
-        loop(arguments, start, end, (arg) => {
+        iterate(arguments, start, end, (arg) => {
           append(middleware, arg);
         });
 

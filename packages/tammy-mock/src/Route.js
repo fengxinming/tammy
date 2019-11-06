@@ -1,6 +1,6 @@
 import pathToRegExp from 'path-to-regexp';
 import isFunction from 'celia/isFunction';
-import loop from 'celia/_loop';
+import iterate from 'celia/_iterate';
 
 function safeDecodeURIComponent(text) {
   try {
@@ -63,7 +63,7 @@ class Route {
     let params = existingParams || {};
     const { paramNames } = this;
 
-    loop(captures, 1, captures.length, (val, i) => {
+    iterate(captures, 1, captures.length, (val, i) => {
       const { name } = (paramNames[i - 1] || {});
       if (name) {
         params[name] = val && safeDecodeURIComponent(val);
