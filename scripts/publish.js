@@ -4,13 +4,27 @@ const { join } = require('path');
 const { exec } = require('./util');
 
 const [, , name, ...args] = process.argv;
-const packages = ['tammy', 'tammy-adapter-xhr', 'tammy-adapter-request', 'tammy-plugin-xsrf', 'tammy-mock'];
 
-packages.forEach(
-  (packageName) => {
-    if (name && name !== packageName) {
-      return;
+function publish(arr, getDir) {
+  arr.forEach(
+    (packageName) => {
+      if (name && name !== packageName) {
+        return;
+      }
+      exec(['publish', getDir(packageName), ...args], true);
     }
-    exec(['publish', join(__dirname, '..', 'packages', packageName, 'npm'), ...args], true);
-  }
-);
+  );
+}
+
+const es6packages = [
+  'tammy',
+  'tammy-adapter-xhr',
+  'tammy-plugin-xsrf',
+  'tammy-mock'
+];
+publish(es6packages, packageName => join(__dirname, '..', 'packages', packageName, 'npm'));
+
+const es5packages = [
+  'tammy-adapter-request'
+];
+publish(es5packages, packageName => join(__dirname, '..', 'packages', packageName));
