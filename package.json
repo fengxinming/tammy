@@ -1,6 +1,6 @@
 {
   "name": "tammy",
-  "version": "1.0.0",
+  "private": true,
   "description": "The progressive HTTP client for the browser.",
   "main": "./tammy.common.js",
   "module": "./tammy.esm.js",
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node ./scripts/build.js",
     "test": "node ./scripts/test.js",
-    "publish": "node ./scripts/publish.js"
+    "release": "node ./scripts/release.js"
   },
   "repository": {
     "type": "git",
