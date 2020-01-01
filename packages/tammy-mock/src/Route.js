@@ -1,6 +1,6 @@
 import pathToRegExp from 'path-to-regexp';
 import isFunction from 'celia/isFunction';
-import iterate from 'celia/_iterate';
+import forSlice from 'celia/forSlice';
 
 function safeDecodeURIComponent(text) {
   try {
@@ -63,7 +63,7 @@ class Route {
     let params = existingParams || {};
     const { paramNames } = this;
 
-    iterate(captures, 1, captures.length, (val, i) => {
+    forSlice(captures, 1, captures.length, (val, i) => {
       const { name } = (paramNames[i - 1] || {});
       if (name) {
         params[name] = val && safeDecodeURIComponent(val);

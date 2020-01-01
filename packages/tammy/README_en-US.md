@@ -170,7 +170,7 @@ request.all([{
   - isString
   - joinPath
   - joinQuery
-  - iterate
+  - forSlice
   - merge
   - noop
   - remove
@@ -204,7 +204,7 @@ import {
   isString,
   joinPath,
   joinQuery,
-  iterate,
+  forSlice,
   merge,
   noop,
   remove,

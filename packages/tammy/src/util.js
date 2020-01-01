@@ -7,7 +7,7 @@ import forOwn from 'celia/forOwn';
 import stringifyQuery from 'qs-like/stringify';
 import isAbsoluteURL from 'celia/isAbsoluteURL';
 import joinPath from 'celia/joinPath';
-import iterate from 'celia/_iterate';
+import forSlice from 'celia/forSlice';
 import remove from 'celia/remove';
 import removeAt from 'celia/removeAt';
 import noop from 'celia/noop';
@@ -25,7 +25,7 @@ export {
   stringifyQuery,
   isAbsoluteURL,
   joinPath,
-  iterate,
+  forSlice,
   noop
 };
 
@@ -51,7 +51,7 @@ function _merge(srcObj, destObj) {
  * @param {Object} result
  */
 export function merge(result) {
-  iterate(arguments, 1, arguments.length, (arg) => {
+  forSlice(arguments, 1, arguments.length, (arg) => {
     result = _merge(result, arg);
   });
   return result;

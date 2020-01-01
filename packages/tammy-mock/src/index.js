@@ -2,7 +2,7 @@ import {
   isFunction,
   isString,
   isAbsoluteURL,
-  iterate,
+  forSlice,
   createError,
   ECONNRESET
 } from 'tammy';
@@ -74,7 +74,7 @@ class Mock {
           name = null;
         }
         middleware = [];
-        iterate(arguments, start, end, (arg) => {
+        forSlice(arguments, start, end, (arg) => {
           append(middleware, arg);
         });
 
